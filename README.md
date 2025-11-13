@@ -25,8 +25,24 @@ Optimizations have been made:
 * Firmware loader for compatibility with OTA BLE and Zigbee variants.
 * Added a variant with the BL0937 sensor.
 
-Further development
+Further development:
 
 * Custom settings of coefficients for the sensor.
 * Adding a BLE beacon with the BTHome format.
   
+
+### Передача показаний:
+
+Для устройств с датчиком BL0937:
+
+* Значения “Current” и “Voltage” регистрируются поочередно с шагом 1 секунды.
+* Значение “Energy ” регистрируются непрерывно с шагом 8 секунд и набирается без потерь в “Summation delivered”.
+* Все показания обрабатываются с шагом 8 секунд. “Power Factor” не вычисляется. Т.е. значение “Voltage” * “Current” может не совпадать со значением  “Power”.
+
+Передача показаний осуществляется в формате:
+
+* Current:  0.001 (A), минимальный шаг измерений:  2..3 mA
+* Voltage: 0.01 (V) , минимальный шаг измерений: 30 mV 
+* Power:  3 Auto-mode: 0.1, 0.01 (W), минимум шаг измерений: 0.16 W
+* Summation delivered: 0.00001 (kWh)
+
