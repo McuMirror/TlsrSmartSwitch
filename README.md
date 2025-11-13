@@ -42,6 +42,8 @@ Further development:
 
 ### Передача показаний в Zigbee от BL0937 осуществляется в формате:
 
+![grf_pl0937.gif](https://raw.githubusercontent.com/pvvx/TlsrSmartSwitch/refs/heads/master/img/grf_pl0937.gif)
+
 * Current:  0.001 (A), минимальный шаг измерений:  2..3 mA
 * Voltage: 0.01 (V), минимальный шаг измерений: 30 mV 
 * Power:  3 Auto-mode: 0.1, 0.01 (W), минимум: 0.16 W
