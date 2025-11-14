@@ -480,11 +480,24 @@ zcl_msAttr_t g_zcl_msAttrs = {
     .current_divisor = 1000 // in 0.001A
 };
 
+#ifndef MAX_VOLTAGE_DEF
+#define MAX_VOLTAGE_DEF			26000 // 260.00V
+#endif
+#ifndef MIN_VOLTAGE_DEF
+#define MIN_VOLTAGE_DEF			18000 // 180.00V
+#endif
+#ifndef MAX_CURRENT_DEF
+#define MAX_CURRENT_DEF			25000 // 25.000A
+#endif
+#ifndef PERIOD_MAX_CURRENT_DEF
+#define PERIOD_MAX_CURRENT_DEF	8	// 8 sec
+#endif
+
 const zcl_config_min_max_t def_config_min_max = {
-	.max_voltage = 26000, // in 0.01V, = 0 - off
-	.min_voltage = 18000, // in 0.01V, = 0 - off
-	.max_current = 25000, // in 0.001A, = 0 - off
-	.time_max_current = 16 // in sec, minimum 8, step 8, = 0 - off
+	.max_voltage = MAX_VOLTAGE_DEF, // in 0.01V, = 0 - off
+	.min_voltage = MIN_VOLTAGE_DEF, // in 0.01V, = 0 - off
+	.max_current = MAX_CURRENT_DEF, // in 0.001A, = 0 - off
+	.time_max_current = PERIOD_MAX_CURRENT_DEF // in sec, minimum 8, step 8, = 0 - off
 };
 
 zcl_config_min_max_t config_min_max;

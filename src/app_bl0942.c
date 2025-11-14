@@ -33,17 +33,22 @@ typedef struct __attribute__((packed)) {
 
 dma_uart_rx_buf_t urxb; // UART RX DMA buffer
 
+app_monitoring_t pkt_buf;
+
 static uint16_t tik_max_current; // count max current, step 8 sec
 static uint8_t first_start = true;     // flag
 
 //--------- Data for calculating BL0942 --------
 
 // This REF get from https://github.com/esphome/esphome/blob/dev/esphome/components/bl0942/bl0942.h
-#define BL0942_POWER_REF        28149691 // 2pow24/0.596  // x1000: x1000: 0..327.67W, x100 32.767..327.67W, x10: 327.67..3276.7W
-#define BL0942_VOLTAGE_REF      26927694 // 2pow32/159.5 // 158.7335944299 // x100: 0..655.35V
-#define BL0942_CURRENT_REF      17096883 // 2pow32/251.21346469622 // 305978/1.218, x1000: 0..65.535A
-#define BL0942_ENERGY_REF       129968911 // 2pow32/33.0461127328 // x100
-#define BL0942_FREQ_REF         100000000 // x100
+#define BL0942_CURRENT_REF      16860520 // 2pow32/251.21346469622 // x1000: 0..65.535A
+#define BL0942_VOLTAGE_REF      26927694 // 2pow32/159.5 // x100: 0..655.35V
+// POWER_REF = (2pow32*VOLTAGE_REF)*(2pow32*CURRENT_REF)*353700/305978/73989 = 0.63478593422
+#define BL0942_POWER_REF        27060025 // 2pow24/0.620  // x1000: x1000: 0..327.67W, x100 32.767..327.67W, x10: 327.67..3276.7W
+// ENERGY_REF=((2pow24/POWER_REF)*36000)/419430.4 = 0.053215
+#define BL0942_ENERGY_REF       315272310 // 2pow24/0.053215 // x100000
+// 6536
+#define BL0942_FREQ_REF         100000000 // (measured: 100175000) x100
 
 const sensor_pwr_coef_t sensor_pwr_coef_def = {
 	    .current = BL0942_CURRENT_REF,
@@ -162,25 +167,25 @@ void monitoring_handler(void) {
     uint64_t tmp;
 
     app_monitoring_t *pkt = (app_monitoring_t*)urxb.data;
-
     if(reg_dma_rx_rdy0 & FLD_DMA_IRQ_UART_RX) { // new data ?
         reg_uart_status0 |= FLD_UART_CLEAR_RX_FLAG | FLD_UART_RX_ERR_FLAG;
         if(urxb.dma_len == sizeof(app_monitoring_t)
           && pkt->head == HEAD
           && checksum((uint8_t *)pkt, sizeof(app_monitoring_t)) == pkt->crc) {
+        	memcpy(&pkt_buf, pkt, sizeof(pkt_buf));
+        	pkt = &pkt_buf;
+            reg_dma_rx_rdy0 = FLD_DMA_IRQ_UART_RX;
 
+            energy = pkt->cf_cnt;
         	if (first_start) {
                 first_start = false;
-                reg_dma_rx_rdy0 = FLD_DMA_IRQ_UART_RX;
+            	old_fract.old_energy = energy;
             } else {
 
                 current = pkt->i_rms;
                 voltage = pkt->v_rms;
                 power = pkt->watt;
                 freq = pkt->freq;
-                energy = pkt->cf_cnt;
-
-                reg_dma_rx_rdy0 = FLD_DMA_IRQ_UART_RX;
 
                 tmp = mul32x32_64(current, sensor_pwr_coef.current);
                 tmp += old_fract.current;
@@ -196,7 +201,7 @@ void monitoring_handler(void) {
 
                 // power x1000 0..3276.750W
                 if(power < 0)
-                    power =  -power;
+                    power = -power;
 
                 tmp = mul32x32_64(power, sensor_pwr_coef.power);
                 tmp += old_fract.power;
@@ -224,22 +229,23 @@ void monitoring_handler(void) {
                 g_zcl_msAttrs.freq = (uint16_t)freq;
 
                 freq =  energy;
-            	energy -= old_fract.old_energy;
+                if(energy < old_fract.old_energy) {
+                	energy += 0x1000000 - old_fract.old_energy;
+                } else {
+                	energy -= old_fract.old_energy;
+                }
                 old_fract.old_energy = freq;
 
-                if(energy) {
+               	tmp = mul32x32_64(energy, sensor_pwr_coef.energy);
+                tmp += old_fract.energy;
+                old_fract.energy = tmp & 0xffffff;
+                energy = tmp >> 24;
 
-                	tmp = mul32x32_64(energy, sensor_pwr_coef.energy);
-                    tmp += old_fract.energy;
-                    old_fract.energy = tmp & 0xffffffff;
-                    energy = tmp >> 32;
-
-                	if(energy) {
-                		save_data.energy += energy;
-                		g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
-                		new_save_data = true; // energy_save();
-                	}
-                }
+              	if(energy) {
+               		save_data.energy += energy;
+               		g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
+               		new_save_data = true; // energy_save();
+               	}
 
                 if(config_min_max.min_voltage
                 && voltage < config_min_max.min_voltage) {
@@ -253,7 +259,7 @@ void monitoring_handler(void) {
                 }
                 if(config_min_max.max_current && config_min_max.time_max_current) {
                     if(power > config_min_max.max_current) {
-                    	tik_max_current += 8;
+                    	tik_max_current ++;
                     	if(tik_max_current >= config_min_max.time_max_current) {
                     		tik_max_current = 0xffff;
                     		cmdOnOff_off(APP_ENDPOINT1);
@@ -266,7 +272,7 @@ void monitoring_handler(void) {
             }
         }
     } else {
-        reg_dma_rx_rdy0 = FLD_DMA_IRQ_UART_RX;
+    	reg_dma_rx_rdy0 = FLD_DMA_IRQ_UART_RX;
     }
 }
 

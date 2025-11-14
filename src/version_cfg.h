@@ -99,7 +99,7 @@
 
 /* Board define */
 #ifndef BOARD
-#define BOARD					BOARD_MZSW02_BL0937
+#define BOARD					BOARD_MZSW01_BL0942
 #endif
 
 /* Chip IDs */

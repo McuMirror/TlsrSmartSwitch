@@ -43,9 +43,9 @@ static old_fract_t old_fract; // Remainder from the previous division
  *
  */
 // Sensor Coefficients (for period 8 sec)
-#define BL0937_POWER_REF          (1081452) 	// x100 0..327.67W, x10: 327.67..3276.7W (divisor = 10, 100 - > W)
-#define BL0937_VOLTAGE_REF        (197732)  	// x100: 0..655.35V (divisor = 100 - > V)
-#define BL0937_CURRENT_REF        (178060) 		// x1000: 0..65.535A (divisor = 1000 - > A)
+#define BL0937_POWER_REF          1081452 	// x100 0..327.67W, x10: 327.67..3276.7W (divisor = 10, 100 - > W)
+#define BL0937_VOLTAGE_REF        197732  	// x100: 0..655.35V (divisor = 100 - > V)
+#define BL0937_CURRENT_REF        178060 		// x1000: 0..65.535A (divisor = 1000 - > A)
 #define BL0937_ENERGY_REF         ((BL0937_POWER_REF + 225)/450) //(=2403) x100 Wh (divisor = 100000 - > kWh)
 
 const sensor_pwr_coef_t sensor_pwr_coef_def = {

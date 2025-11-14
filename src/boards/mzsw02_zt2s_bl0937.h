@@ -83,6 +83,11 @@ enum {
 #define PD3_OUTPUT_ENABLE       ON
 #define PD3_DATA_OUT 			0
 
+#define MAX_VOLTAGE_DEF			26000 // 260.00V
+#define MIN_VOLTAGE_DEF			18000 // 180.00V
+#define MAX_CURRENT_DEF			25000 // 25.000A
+#define PERIOD_MAX_CURRENT_DEF	8	// 8 sec
+
 /********************* Configure Vbat ***************************/
 
 #define USE_BATTERY			BATTERY_DC_DC

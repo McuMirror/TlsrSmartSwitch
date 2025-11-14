@@ -4,6 +4,8 @@ Alternative firmwares for Smart Switch on the TLSR925x chipset.
 ## The repository is under development!
 
 
+BETA ver 0.0.0.1
+
 Supported device models:
 
 * [Tuya ZigBee "Mini Zigbee Switch"](https://pvvx.github.io/TS0001_TZ3000_kqvb5akv/) (Module ZTU, Sensor: BL0942), FW name: MZSW01
