@@ -490,14 +490,23 @@ zcl_msAttr_t g_zcl_msAttrs = {
 #define MAX_CURRENT_DEF			25000 // 25.000A
 #endif
 #ifndef PERIOD_MAX_CURRENT_DEF
-#define PERIOD_MAX_CURRENT_DEF	8	// 8 sec
+#define PERIOD_MAX_CURRENT_DEF	0	// sec
 #endif
+#ifndef PERIOD_RELOAD_DEF
+#define PERIOD_RELOAD_DEF	0	// sec
+#endif
+#ifndef PERIOD_START_DEF
+#define PERIOD_START_DEF	0	// sec
+#endif
+
 
 const zcl_config_min_max_t def_config_min_max = {
 	.max_voltage = MAX_VOLTAGE_DEF, // in 0.01V, = 0 - off
 	.min_voltage = MIN_VOLTAGE_DEF, // in 0.01V, = 0 - off
 	.max_current = MAX_CURRENT_DEF, // in 0.001A, = 0 - off
-	.time_max_current = PERIOD_MAX_CURRENT_DEF // in sec, minimum 8, step 8, = 0 - off
+	.time_max_current = PERIOD_MAX_CURRENT_DEF, // in sec, minimum 8, step 8, = 0 - off
+	.time_reload = PERIOD_RELOAD_DEF, // in sec, minimum 8, step 8, = 0 - off
+	.time_start = PERIOD_START_DEF, // in sec, minimum 8, step 8, = 0 - off
 };
 
 zcl_config_min_max_t config_min_max;
@@ -513,6 +522,8 @@ const zclAttrInfo_t ms_attrTbl[] = {
     {ZCL_ATTRID_RMS_VOLTAGE,                ZCL_UINT16,   RR,   (uint8_t*)&g_zcl_msAttrs.voltage            },
     {ZCL_ATTRID_RMS_CURRENT,                ZCL_UINT16,   RR,   (uint8_t*)&g_zcl_msAttrs.current            },
     {ZCL_ATTRID_ACTIVE_POWER,               ZCL_INT16,    RR,   (uint8_t*)&g_zcl_msAttrs.power              },
+	{ZCL_ATTRID_RMS_EXTREME_OVER_VOLTAGE_PERIOD, ZCL_UINT16, RW, (uint8_t*)&config_min_max.time_reload		},
+	{ZCL_ATTRID_RMS_EXTREME_UNDER_VOLTAGE_PERIOD, ZCL_UINT16, RW, (uint8_t*)&config_min_max.time_start		},
 	{ZCL_ATTRID_RMS_VOLTAGE_SWELL_PERIOD,   ZCL_UINT16,   RW,   (uint8_t*)&config_min_max.time_max_current  },
     {ZCL_ATTRID_AC_VOLTAGE_MULTIPLIER,      ZCL_UINT16,   R,    (uint8_t*)&g_zcl_msAttrs.mutipler           },
     {ZCL_ATTRID_AC_VOLTAGE_DIVISOR,         ZCL_UINT16,   R,    (uint8_t*)&g_zcl_msAttrs.divisor            },

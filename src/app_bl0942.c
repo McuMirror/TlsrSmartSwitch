@@ -35,7 +35,8 @@ dma_uart_rx_buf_t urxb; // UART RX DMA buffer
 
 app_monitoring_t pkt_buf;
 
-static uint16_t tik_max_current; // count max current, step 8 sec
+static uint16_t tik_max_current; // count max current, step 1 sec, =0xFFFF - flag end
+uint16_t tik_reload, tik_start; // step 1 sec, =0xFFFF - flag end
 static uint8_t first_start = true;     // flag
 
 //--------- Data for calculating BL0942 --------
@@ -43,9 +44,9 @@ static uint8_t first_start = true;     // flag
 // This REF get from https://github.com/esphome/esphome/blob/dev/esphome/components/bl0942/bl0942.h
 #define BL0942_CURRENT_REF      16860520 // 2pow32/251.21346469622 // x1000: 0..65.535A
 #define BL0942_VOLTAGE_REF      26927694 // 2pow32/159.5 // x100: 0..655.35V
-// POWER_REF = (2pow32*VOLTAGE_REF)*(2pow32*CURRENT_REF)*353700/305978/73989 = 0.63478593422
+// POWER_REF = (2pow32/VOLTAGE_REF)*(2pow32/CURRENT_REF)*353700/305978/73989 = 0.63478593422
 #define BL0942_POWER_REF        27060025 // 2pow24/0.620  // x1000: x1000: 0..327.67W, x100 32.767..327.67W, x10: 327.67..3276.7W
-// ENERGY_REF=((2pow24/POWER_REF)*36000)/419430.4 = 0.053215
+// ENERGY_REF = ((2pow24/POWER_REF)*36000)/419430.4 = 0.053215
 #define BL0942_ENERGY_REF       315272310 // 2pow24/0.053215 // x100000
 // 6536
 #define BL0942_FREQ_REF         100000000 // (measured: 100175000) x100
@@ -131,6 +132,12 @@ static uint8_t checksum(uint8_t *data, uint16_t length) {
 
 // Initializing UART for BL0942
 void app_sensor_init(void) {
+
+	if(!config_min_max.time_start)
+	    tik_start = 0xffff;
+	if(!config_min_max.time_reload)
+		tik_reload = 0xffff;
+	// tik_max_current = 0;
 
     drv_uart_pin_set(GPIO_UART_TX, GPIO_UART_RX);
 
@@ -247,32 +254,49 @@ void monitoring_handler(void) {
                		new_save_data = true; // energy_save();
                	}
 
-                if(config_min_max.min_voltage
-                && voltage < config_min_max.min_voltage) {
-            		cmdOnOff_off(APP_ENDPOINT1);
+                if((config_min_max.min_voltage && voltage < config_min_max.min_voltage)
+                	|| (config_min_max.max_voltage && voltage > config_min_max.max_voltage)) {
+                	tik_reload = 0;
+            		if(tik_start != 0xffff)
+            			tik_start = 0;
+                	if(relay_settings.status_onoff[0])
+                		//cmdOnOff_off(dev_relay.unit_relay[0].ep);
+                		set_relay_status(0, 0);
                 	return;
                 }
-                if(config_min_max.max_voltage
-                      && voltage > config_min_max.max_voltage) {
-            		cmdOnOff_off(APP_ENDPOINT1);
-                	return;
-                }
-                if(config_min_max.max_current && config_min_max.time_max_current) {
-                    if(power > config_min_max.max_current) {
-                    	tik_max_current ++;
+                if(config_min_max.max_current
+                  && config_min_max.time_max_current
+                  && (current > config_min_max.max_current)) {
+            		tik_reload = 0;
+            		if(tik_start != 0xffff)
+            			tik_start = 0;
+            		if(relay_settings.status_onoff[0]) {
+            			if(tik_max_current == 0xffff)
+            				return;
+            			tik_max_current += 8;
                     	if(tik_max_current >= config_min_max.time_max_current) {
                     		tik_max_current = 0xffff;
-                    		cmdOnOff_off(APP_ENDPOINT1);
+                    		//cmdOnOff_off(dev_relay.unit_relay[0].ep);
+                    		set_relay_status(0, 0);
                         	return;
                     	}
-                    } else {
-                    	tik_max_current = 0;
-                    }
+            		}
+                } else {
+                	tik_max_current = 0;
+                }
+                if(config_min_max.time_start && tik_start >= config_min_max.time_start)
+                	tik_start = 0xffff;
+                if(config_min_max.time_reload && tik_reload >= config_min_max.time_reload) {
+                	tik_reload = 0xffff;
+                	if(relay_settings.status_onoff[0]) {
+                		// cmdOnOff_on(dev_relay.unit_relay[0].ep);
+                		set_relay_status(0, 1);
+                	}
                 }
             }
-        }
-    } else {
-    	reg_dma_rx_rdy0 = FLD_DMA_IRQ_UART_RX;
+    	} else {
+    		reg_dma_rx_rdy0 = FLD_DMA_IRQ_UART_RX;
+    	}
     }
 }
 
@@ -280,6 +304,10 @@ void monitoring_handler(void) {
 int32_t app_monitoringCb(void *arg) {
 
     REG_ADDR16(0x90) = 0xAA58; // Send cmd: "Read full packet"
+	if(tik_reload != 0xffff)
+		tik_reload++;
+	if(tik_start != 0xffff)
+		tik_start++;
 
     return 0;
 }

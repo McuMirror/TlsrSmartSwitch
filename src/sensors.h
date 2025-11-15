@@ -22,8 +22,12 @@ enum {
 	IU_SENSOR_HX71X,	// 10
 	IU_SENSOR_PWMRH,	// 11
 	IU_SENSOR_NTC,		// 12
-	TH_SENSOR_TYPE_MAX // 13
+	IU_SENSOR_BL0937,	// 13
+	IU_SENSOR_BL0942,	// 14
+	TH_SENSOR_TYPE_MAX // 15
 } SENSOR_TYPES_e;
+
+uint16_t tik_reload, tik_start; // step 1 sec, =0xFFFF - flag end
 
 #if USE_SENSOR_TH
 

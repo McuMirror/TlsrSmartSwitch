@@ -3,8 +3,7 @@ Alternative firmwares for Smart Switch on the TLSR925x chipset.
 
 ## The repository is under development!
 
-
-BETA ver 0.0.0.1
+Current FW Version: 0.0.0.2
 
 Supported device models:
 
@@ -28,6 +27,9 @@ Optimizations have been made:
 * Added a variant with the BL0937 sensor.
 * Custom settings of coefficients for the sensor.
 * Disabling the relay based on voltage or current threshold values.
+* Setting the relay restart interval after tripping based on thresholds.
+* Setting the starting interval for threshold checking before the relay is turned on when power is restored.
+* The start and restart intervals are counted using threshold values. If any threshold is triggered, the countdown begins again.
 
 Further development:
 

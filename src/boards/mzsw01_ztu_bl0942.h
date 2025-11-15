@@ -75,6 +75,8 @@ enum {
 #define MIN_VOLTAGE_DEF			18000 // 180.00V
 #define MAX_CURRENT_DEF			25000 // 25.000A
 #define PERIOD_MAX_CURRENT_DEF	8	// 8 sec
+#define PERIOD_RELOAD_DEF		0	// sec
+#define PERIOD_START_DEF		0	// sec
 
 /********************* Configure Vbat ***************************/
 

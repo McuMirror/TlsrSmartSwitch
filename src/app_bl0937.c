@@ -6,7 +6,9 @@ extern u64 mul32x32_64(u32 a, u32 b); // hard function (in div_mod.S)
 
 //--------- Work Data --------
 
-static uint16_t tik_max_current; // count max current, step 8 sec
+static uint16_t tik_max_current; // count max current, step 8 sec, =0xFFFF - flag end
+uint16_t tik_reload, tik_start; // step 1 sec, =0xFFFF - flag end
+
 
 //--------- Data for calculating BL09377 --------
 
@@ -120,6 +122,10 @@ static void timer2_gpio_init(GPIO_PinTypeDef pin,GPIO_PolTypeDef pol)
 
 // Initializing Timers1,2 for BL0937
 void app_sensor_init(void) {
+	if(!config_min_max.time_start)
+	    tik_start = 0xffff;
+	if(!config_min_max.time_reload)
+		tik_reload = 0xffff;
 	//bl0937_cnt.cnt_sel = 0;
 	gpio_write(GPIO_SEL, 0);
 	timer2_gpio_init(GPIO_CF1, POL_RISING);
@@ -185,27 +191,43 @@ void bl0937_new_dataCb(void *args) {
 
 	//TODO: Calculate Power factor = ?
 
-    if(config_min_max.min_voltage
-    && voltage < config_min_max.min_voltage) {
-		cmdOnOff_off(APP_ENDPOINT1);
+    if((config_min_max.min_voltage && voltage < config_min_max.min_voltage)
+    	|| (config_min_max.max_voltage && voltage > config_min_max.max_voltage)) {
+    	tik_reload = 0;
+		if(tik_start != 0xffff)
+			tik_start = 0;
+    	if(relay_settings.status_onoff[0])
+    		//cmdOnOff_off(dev_relay.unit_relay[0].ep);
+    		set_relay_status(0, 0);
     	return;
     }
-    if(config_min_max.max_voltage
-          && voltage > config_min_max.max_voltage) {
-		cmdOnOff_off(APP_ENDPOINT1);
-    	return;
-    }
-    if(config_min_max.max_current && config_min_max.time_max_current) {
-        if(power > config_min_max.max_current) {
-        	tik_max_current += 8;
-        	if(tik_max_current >= config_min_max.time_max_current) {
+    if(config_min_max.max_current
+      && config_min_max.time_max_current
+      && (current > config_min_max.max_current)) {
+		tik_reload = 0;
+		if(tik_start != 0xffff)
+			tik_start = 0;
+		if(relay_settings.status_onoff[0]) {
+			if(tik_max_current == 0xffff)
+				return;
+        	if(++tik_max_current >= config_min_max.time_max_current) {
         		tik_max_current = 0xffff;
-        		cmdOnOff_off(APP_ENDPOINT1);
+        		//cmdOnOff_off(dev_relay.unit_relay[0].ep);
+        		set_relay_status(0, 0);
             	return;
         	}
-        } else {
-        	tik_max_current = 0;
-        }
+		}
+    } else {
+    	tik_max_current = 0;
+    }
+    if(config_min_max.time_start && tik_start >= config_min_max.time_start)
+    	tik_start = 0xffff;
+    if(config_min_max.time_reload && tik_reload >= config_min_max.time_reload) {
+    	tik_reload = 0xffff;
+    	if(relay_settings.status_onoff[0]) {
+    		// cmdOnOff_on(dev_relay.unit_relay[0].ep);
+    		set_relay_status(0, 1);
+    	}
     }
 }
 
@@ -247,6 +269,12 @@ int32_t app_monitoringCb(void *arg) {
 
 		TL_SCHEDULE_TASK(bl0937_new_dataCb, NULL);
 	}
+
+	if(tik_reload != 0xffff)
+		tik_reload++;
+	if(tik_start != 0xffff)
+		tik_start++;
+
 	return 0;
 }
 

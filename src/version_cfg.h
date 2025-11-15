@@ -99,7 +99,7 @@
 
 /* Board define */
 #ifndef BOARD
-#define BOARD					BOARD_MZSW01_BL0942
+#define BOARD					BOARD_MZSW02_BL0937
 #endif
 
 /* Chip IDs */
@@ -128,8 +128,8 @@
 #define APP_RELEASE				0x01	//BCD app release "0.0"
 #define APP_BUILD				0x00	//BCD app build "0.4"
 #else
-#define APP_RELEASE				0x01	//BCD app release "0.1"
-#define APP_BUILD				0x00	//BCD app build "2.9"
+#define APP_RELEASE				0x02	//BCD app release "0.2"
+#define APP_BUILD				0x00	//BCD app build "0.0"
 #endif
 #define STACK_RELEASE			0x30	//BCD stack release 3.0
 #define STACK_BUILD				0x01	//BCD stack build 01

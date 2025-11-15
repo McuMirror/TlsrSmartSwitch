@@ -56,8 +56,27 @@ bdb_commissionSetting_t g_bdbCommissionSetting = {
     .touchlinkLqiThreshold = 0xA0,                                      /* threshold for touch-link scan req/resp command */
 };
 
+/*********************************************************************
+*/
+#if USE_NV_APP
+// Test for compatible version of saved settings formats
+void test_nv_version(void) {
+	u32 ver = 0;
+	if(nv_flashReadNew(1, NV_MODULE_APP, NV_ITEM_APP_DEV_VER, sizeof(ver), (u8 *)&ver) == NV_SUCC
+		&& (ver & 0xFFFF) == (USE_NV_APP & 0xFFFF)
+		&& ver >= USE_NV_APP_OK // compatible ?
+		) {
 
-
+	} else {
+		ver = USE_NV_APP;
+		nv_resetAll();
+		nv_resetModule(NV_MODULE_APP);
+		// energy_remove(); ?
+		nv_flashWriteNew(1, NV_MODULE_APP, NV_ITEM_APP_DEV_VER, sizeof(ver), (u8 *)&ver);
+		SYSTEM_RESET();
+	}
+}
+#endif
 /*********************************************************************
  * @fn      stack_init
  *
@@ -102,15 +121,18 @@ void user_app_init(void)
 
 	zcl_reportingTabInit();
 
-//	start_message();
 	load_config_sensor();
 	load_config_min_max();
 	energy_restore();
+
+    app_sensor_init(); // run before relay on/off !
+
 	relay_settings_restore();
 
 	/* Register ZCL specific cluster information */
     zcl_register(APP_ENDPOINT1, APP_CB_CLUSTER_NUM1, (zcl_specClusterInfo_t *)g_appClusterList1);
 //    zcl_register(APP_ENDPOINT2, APP_CB_CLUSTER_NUM2, (zcl_specClusterInfo_t *)g_appClusterList2);
+
 
     dev_relay_init();
 
@@ -129,12 +151,6 @@ void user_app_init(void)
     wwah_init(WWAH_TYPE_SERVER, (af_simple_descriptor_t *)&app_simpleDesc);
 #endif
 
-    app_sensor_init();
-
-//    printf("FLASH_ADDR_OF_OTA_IMAGE: 0x%08x\r\n", FLASH_ADDR_OF_OTA_IMAGE);
-//    printf("BEGIN_USER_DATA: 0x%x\r\n", BEGIN_USER_DATA);
-//    printf("END_USER_DATA:   0x%x\r\n", END_USER_DATA);
-//    printf("USER_DATA_SIZE:  0x%x\r\n", USER_DATA_SIZE);
 }
 
 void app_task(void) {
@@ -177,7 +193,10 @@ static void app_sysException(void) {
  */
 void user_init(bool isRetention)
 {
-    (void)isRetention;
+#if USE_NV_APP
+    if(!isRetention)
+    	test_nv_version();
+#endif
 
     /* Initialize LEDs*/
     light_init();

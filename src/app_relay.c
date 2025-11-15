@@ -1,4 +1,5 @@
 #include "app_main.h"
+#include "sensors.h"
 
 relay_settings_t relay_settings;
 relay_settings_t relay_settings_saved; // use compare before nv_flashWriteNew()
@@ -38,7 +39,11 @@ static void check_first_start(uint8_t i) {
 
 void set_relay_status(uint8_t i, uint8_t status) {
 //    printf("set_relay_status(i = %d, status = %d). GPIO: %d\r\n", i, status, dev_relay.unit_relay[i].rl);
-    drv_gpio_write(dev_relay.unit_relay[i].rl, status);
+	if(status) {
+		if(tik_reload != 0xffff || tik_start != 0xffff)
+			status = 0;
+	}
+	drv_gpio_write(dev_relay.unit_relay[i].rl, status);
 }
 
 #if UART_PRINTF_MODE && DEBUG_SAVE
@@ -133,6 +138,6 @@ void dev_relay_init(void) {
     dev_relay.unit_relay[0].rl = RELAY1_GPIO;
 
     if (relay_settings.switchType[0] == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
-        check_first_start(0);
+        check_first_start(ZCL_START_UP_ONOFF_SET_ONOFF_TO_OFF);
     }
 }

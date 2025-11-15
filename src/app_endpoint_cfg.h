@@ -115,6 +115,8 @@ typedef struct {
     int16_t min_voltage;
     int16_t max_current;
     uint16_t time_max_current;
+    uint16_t time_reload;
+    uint16_t time_start;
 } zcl_config_min_max_t;
 
 extern zcl_config_min_max_t config_min_max;

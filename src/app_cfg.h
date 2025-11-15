@@ -117,9 +117,6 @@ extern "C" {
  */
     #define BEGIN_USER_DATA_F512K             0x72000 // begin address for saving energy
     #define END_USER_DATA_F512K               0x76000 // end address for saving energy
-    #define NV_ITEM_APP_CFG_RELAY  		(NV_ITEM_APP_GP_TRANS_TABLE + 1)        // see sdk/proj/drivers/drv_nv.h
-	#define NV_ITEM_APP_CFG_MIN_MAX     (NV_ITEM_APP_GP_TRANS_TABLE + 2)
-	#define NV_ITEM_APP_CFG_SENSOR      (NV_ITEM_APP_GP_TRANS_TABLE + 3)
 
 /**********************************************************************
  * I2C driver type
@@ -257,17 +254,21 @@ extern "C" {
 /**********************************************************************
  * NVM configuration
  */
-// ID compatible NV: (0x3D000000 | (APP_RELEASE<<16) | (APP_BUILD<<8) | DEVICE)
-// Used NV_MODULE_APP Flash: 0x7a000 - 0x7c000
-#define USE_NV_APP  (0x3D012400 | BOARD)    // ID, not change!
+
+// ID compatible NV, and flag used NV_MODULE_APP
+#define USE_NV_APP  ((APP_RELEASE << 24) | (APP_BUILD << 16) | (0x1000 | (CHIP_TYPE << 8) | BOARD))    // ID, not change!
+#define USE_NV_APP_OK  ((0 << 24) | (0x02 << 16) | (0x1000 | (CHIP_TYPE << 8) | BOARD))  // Test for compatible version of saved settings formats
 
 typedef enum{
-    NV_ITEM_APP_DEV_VER = 0x60,
+    NV_ITEM_APP_DEV_VER = 0x60, // see sdk/proj/drivers/drv_nv.h
     NV_ITEM_APP_DEV_NAME,
     NV_ITEM_APP_MAN_NAME,
     NV_ITEM_APP_THERMOSTAT_UI_CFG,
     NV_ITEM_APP_PIR_CFG,
     NV_ITEM_APP_TRIGGER_UI_CFG,
+	NV_ITEM_APP_CFG_RELAY,
+	NV_ITEM_APP_CFG_MIN_MAX,
+	NV_ITEM_APP_CFG_SENSOR
 } nv_item_app_t;
 
 /**********************************************************************
