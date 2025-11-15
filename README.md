@@ -40,3 +40,5 @@ Further development:
 [Описание устройств с датчиком BL0937](https://github.com/pvvx/TlsrSmartSwitch/blob/master/README_BL0937.md).
 
 [Описание устройств с датчиком BL0942](https://github.com/pvvx/TlsrSmartSwitch/blob/master/README_BL0942.md).
+
+[Telegram](https://t.me/pvvx_developments/39)
