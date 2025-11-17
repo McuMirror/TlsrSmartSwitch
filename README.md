@@ -33,6 +33,7 @@ Optimizations have been made:
 
 Further development:
 
+* Adding a thermostat with a MY18B20 sensor connected to terminals “S1” and “S2”.
 * Adding a BLE beacon with the BTHome format.
 
 ---
