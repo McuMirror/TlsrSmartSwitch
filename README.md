@@ -17,9 +17,7 @@ And others, with sensors BL0942 or BL0937 (GPIOs are assigned by a separate util
 
 ## Story:
 
-The original FW structure for "Zigbee Smart Switch" was designed by [slacky1965](https://github.com/slacky1965).
-
-The current versions of the published alternative firmware retain compatibility with [tuya_mini_relay_zrd](https://github.com/slacky1965/tuya_mini_relay_zrd) "quirks."
+The original FW structure for "Zigbee Smart Switch" was designed by [slacky1965-tuya_mini_relay_zrd](https://github.com/slacky1965/tuya_mini_relay_zrd).
 
 Optimizations have been made:
 
@@ -66,7 +64,7 @@ Further development:
 
 [Описание устройств с датчиком BL0942](https://github.com/pvvx/TlsrSmartSwitch/blob/master/README_BL0942.md).
 
-[Описание дополнительных (нестандартных) атрибутов для максимального варианта прошивки](https://github.com/pvvx/TlsrSmartSwitch/blob/master/README_README_ExtAttr.md).
+[Описание дополнительных (нестандартных) атрибутов для максимального варианта прошивки](https://github.com/pvvx/TlsrSmartSwitch/blob/master/README_ExtAttr.md).
 
 
 * Требуется помощь в проверке всех вариантов прошивок и комбинаций установок, а так-же в создании скриптов "причуд" для ZHA и Z2M.
