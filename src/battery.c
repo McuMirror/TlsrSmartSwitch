@@ -20,7 +20,7 @@ measured_battery_t measured_battery;
 #define BAT_AVERAGE_COUNT_SHL	9 // 4,5,6,7,8,9,10,11,12 -> 16,32,64,128,256,512,1024,2048,4096
 
 _BAT_SPEED_CODE_SEC_
-__attribute__((optimize("-Os")))
+//__attribute__((optimize("-Os")))
 void battery_detect(bool startup_flg)
 {
 	u32 battery_level = BATTERY_LOW_POWER;

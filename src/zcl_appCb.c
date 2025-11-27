@@ -1,27 +1,9 @@
-/********************************************************************************************************
+/**********************************************************************
  * @file    zcl_appCb.c
  *
  * @brief   This is the source file for zcl_appCb
  *
- * @author  Zigbee Group
- * @date    2021
- *
- * @par     Copyright (c) 2021, Telink Semiconductor (Shanghai) Co., Ltd. ("TELINK")
- *          All rights reserved.
- *
- *          Licensed under the Apache License, Version 2.0 (the "License");
- *          you may not use this file except in compliance with the License.
- *          You may obtain a copy of the License at
- *
- *              http://www.apache.org/licenses/LICENSE-2.0
- *
- *          Unless required by applicable law or agreed to in writing, software
- *          distributed under the License is distributed on an "AS IS" BASIS,
- *          WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *          See the License for the specific language governing permissions and
- *          limitations under the License.
- *
- *******************************************************************************************************/
+ *********************************************************************/
 
 /**********************************************************************
  * INCLUDES
@@ -44,14 +26,14 @@
 /**********************************************************************
  * LOCAL FUNCTIONS
  */
-#ifdef ZCL_READ
+#if 0 //def ZCL_READ
 static void app_zclReadRspCmd(zclReadRspCmd_t *pReadRspCmd);
 #endif
 #ifdef ZCL_WRITE
 static void app_zclWriteReqCmd(uint8_t epId, uint16_t clusterId, zclWriteCmd_t *pWriteReqCmd);
 static void app_zclWriteRspCmd(zclWriteRspCmd_t *pWriteRspCmd);
 #endif
-#ifdef ZCL_REPORT
+#if 0 //def ZCL_REPORT
 static void app_zclCfgReportCmd(uint8_t endPoint, uint16_t clusterId, zclCfgReportCmd_t *pCfgReportCmd);
 static void app_zclCfgReportRspCmd(zclCfgReportRspCmd_t *pCfgReportRspCmd);
 static void app_zclReportCmd(uint16_t clusterId, zclReportCmd_t *pReportCmd, aps_data_ind_t aps_data_ind);
@@ -89,15 +71,14 @@ uint8_t count_no_service = 0;
  */
 void app_zclProcessIncomingMsg(zclIncoming_t *pInHdlrMsg)
 {
-//  printf("app_zclProcessIncomingMsg\n");
 
-    uint16_t cluster = pInHdlrMsg->msg->indInfo.cluster_id;
+//    uint16_t cluster = pInHdlrMsg->msg->indInfo.cluster_id;
     uint8_t endPoint = pInHdlrMsg->msg->indInfo.dst_ep;
-    aps_data_ind_t aps_data_ind = pInHdlrMsg->msg->indInfo;
+//    aps_data_ind_t aps_data_ind = pInHdlrMsg->msg->indInfo;
 
     switch(pInHdlrMsg->hdr.cmd)
     {
-#ifdef ZCL_READ
+#if 0 //def ZCL_READ
         case ZCL_CMD_READ_RSP:
             app_zclReadRspCmd(pInHdlrMsg->attrCmd);
             break;
@@ -110,7 +91,7 @@ void app_zclProcessIncomingMsg(zclIncoming_t *pInHdlrMsg)
             app_zclWriteRspCmd(pInHdlrMsg->attrCmd);
             break;
 #endif
-#ifdef ZCL_REPORT
+#if 0 //def ZCL_REPORT
         case ZCL_CMD_CONFIG_REPORT:
             app_zclCfgReportCmd(endPoint, cluster, pInHdlrMsg->attrCmd);
             break;
@@ -129,7 +110,7 @@ void app_zclProcessIncomingMsg(zclIncoming_t *pInHdlrMsg)
     }
 }
 
-#ifdef ZCL_READ
+#if 0 // def ZCL_READ
 /*********************************************************************
  * @fn      app_zclReadRspCmd
  *
@@ -140,7 +121,6 @@ void app_zclProcessIncomingMsg(zclIncoming_t *pInHdlrMsg)
  * @return  None
  */
 static void app_zclReadRspCmd(zclReadRspCmd_t *pReadRspCmd) {
-//    printf("app_zclReadRspCmd\n");
 
     uint8_t numAttr = pReadRspCmd->numAttr;
     zclReadRspStatus_t *attrList = pReadRspCmd->attrList;
@@ -170,7 +150,7 @@ static void app_zclReadRspCmd(zclReadRspCmd_t *pReadRspCmd) {
 #ifdef ZCL_WRITE
 
 enum {
-	NBIT_REALAY_CONFIG = 1,
+	NBIT_ON_OFF_CONFIG = 1,
 	NBIT_MIN_MAX_CONFIG,
 	NBIT_SENSOR_CONFIG,
 	NBIT_MY18B20_CONFIG,
@@ -187,114 +167,102 @@ enum {
  */
 static void app_zclWriteReqCmd(uint8_t epId, uint16_t clusterId, zclWriteCmd_t *pWriteReqCmd)
 {
-
-    uint8_t numAttr = pWriteReqCmd->numAttr;
     zclWriteRec_t *attr = pWriteReqCmd->attrList;
-    uint8_t save = 0;
-    uint8_t idx = epId - 1;
-    zcl_onOffCfgAttr_t *pOnOffCfg = zcl_onOffCfgAttrsGet();
-    pOnOffCfg += idx;
-
-//    printf("app_zclWriteReqCmd\r\n");
-
-    if (clusterId == ZCL_CLUSTER_GEN_ON_OFF) {
-        for (uint32_t i = 0; i < numAttr; i++) {
-            if (attr[i].attrID == ZCL_ATTRID_START_UP_ONOFF) {
-                uint8_t startup = attr[i].attrData[0];
-//                printf("startup: 0x%02x, ep: %d\r\n", startup, epId);
-                relay_settings.startUpOnOff[idx] = startup;
-                save |= BIT(NBIT_REALAY_CONFIG);
-            }
-        }
+    uint32_t save = 0;
+    uint16_t attrID;
+    uint8_t data;
+    uint8_t numAttr = pWriteReqCmd->numAttr;
+    for (uint32_t i = 0; i < numAttr; i++) {
+    	data = attr[i].attrData[0];
+    	attrID = attr[i].attrID;
+		if (clusterId == ZCL_CLUSTER_GEN_ON_OFF) {
+			if (attrID == ZCL_ATTRID_START_UP_ONOFF) {
+				cfg_on_off.startUpOnOff = data;
+				save |= BIT(NBIT_ON_OFF_CONFIG);
+			}
 #if USE_SWITCH
-    } else if (clusterId == ZCL_CLUSTER_GEN_ON_OFF_SWITCH_CONFIG) {
-        for (uint32_t i = 0; i < numAttr; i++) {
-            if (attr[i].attrID == CUSTOM_ATTRID_SWITCH_TYPE) {
-                uint8_t type = attr[i].attrData[0];
-//                printf("type: 0x%02x\r\n", type);
-                relay_settings.switchType[idx] = type;
-                pOnOffCfg->switchType = type;
-                if (type == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
-                    cmdOnOff_off(epId);
-                    relay_settings.switch_decoupled[idx] = CUSTOM_SWITCH_DECOUPLED_ON;
-                    pOnOffCfg->custom_decoupled = CUSTOM_SWITCH_DECOUPLED_ON;
-                }
-                save |= BIT(NBIT_REALAY_CONFIG);
-            } else if (attr[i].attrID == ZCL_ATTRID_SWITCH_ACTION) {
-                uint8_t action = attr[i].attrData[0];
-//                printf("action: 0x%02x, ep: %d\r\n", action, epId);
-                relay_settings.switchActions[idx] = action;
-                save |= BIT(NBIT_REALAY_CONFIG);
-            } else if (attr[i].attrID == CUSTOM_ATTRID_DECOUPLED) {
-                uint8_t decoupled = attr[i].attrData[0];
-//                printf("decoupled: 0x%02x\r\n", decoupled);
-                cmdOnOff_off(epId);
-                if (decoupled == CUSTOM_SWITCH_DECOUPLED_OFF && relay_settings.switchType[idx] == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
-                    decoupled = CUSTOM_SWITCH_DECOUPLED_ON;
-                    pOnOffCfg->custom_decoupled = decoupled;
-//                    app_forcedReport(epId, clusterId, CUSTOM_ATTRID_DECOUPLED);
-                }
-                relay_settings.switch_decoupled[idx] = decoupled;
-                save |= BIT(NBIT_REALAY_CONFIG);
-            }
-        }
+		} else if (clusterId == ZCL_CLUSTER_GEN_ON_OFF_SWITCH_CONFIG) {
+			if (attrID == CUSTOM_ATTRID_SWITCH_TYPE) {
+				cfg_on_off.switchType = data;
+				if (data == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
+					cmdOnOff_off();
+					cfg_on_off.switchDecoupled = CUSTOM_SWITCH_DECOUPLED_ON;
+				}
+				save |= BIT(NBIT_ON_OFF_CONFIG);
+			} else if (attrID == ZCL_ATTRID_SWITCH_ACTION) {
+				cfg_on_off.switchActions = data;
+				save |= BIT(NBIT_ON_OFF_CONFIG);
+			} else if (attrID == CUSTOM_ATTRID_DECOUPLED) {
+				cmdOnOff_off();
+				if (data == CUSTOM_SWITCH_DECOUPLED_OFF
+					&& cfg_on_off.switchType == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
+					data = CUSTOM_SWITCH_DECOUPLED_ON;
+				}
+				cfg_on_off.switchDecoupled = data;
+				save |= BIT(NBIT_ON_OFF_CONFIG);
+			}
 #endif // USE_SWITCH
 #if USE_SENSOR_MY18B20
-#ifdef ZCL_THERMOSTAT
-    } else if (clusterId == ZCL_CLUSTER_HAVC_THERMOSTAT) {
-    	 for (uint32_t i = 0; i < numAttr; i++) {
-    		 switch(attr[i].attrID) {
-    		 case ZCL_ATTRID_HVAC_THERMOSTAT_LOCAL_TEMP_CALIBRATION:
-    			 save |= BIT(NBIT_THERM_CONFIG);
-    			 break;
-    		 case ZCL_ATTRID_HVAC_THERMOSTAT_OCCUPIED_COOLING_SETPOINT:
-    			 save |= BIT(NBIT_THERM_CONFIG);
-    			 break;
-    		 case ZCL_ATTRID_HVAC_THERMOSTAT_OCCUPIED_HEATING_SETPOINT:
-    			 save |= BIT(NBIT_THERM_CONFIG);
-    			 break;
-    		 case ZCL_ATTRID_HVAC_THERMOSTAT_SYS_MODE:
-    			 save |= BIT(NBIT_THERM_CONFIG);
-    			 break;
-    		 default:
-        		 if(attr[i].attrID >= 0x1000 && attr[i].attrID < 0x1100) {
-        			 save |= BIT(NBIT_MY18B20_CONFIG);
-        		 }
-    		 }
-    	 }
-
+ #ifdef ZCL_THERMOSTAT
+        } else if (clusterId == ZCL_CLUSTER_HAVC_THERMOSTAT) {
+#ifndef ZCL_TEMPERATURE_MEASUREMENT
+        	if(attrID == ZCL_ATTRID_HVAC_THERMOSTAT_MIN_HEAT_SETPOINT_LIMIT
+        		|| attrID == ZCL_ATTRID_HVAC_THERMOSTAT_MAX_HEAT_SETPOINT_LIMIT
+				attrID >= ZCL_TEMPERATURE_SENSOR_MULTIPLER) {
+        		save |= BIT(NBIT_MY18B20_CONFIG);
+        	} else
 #endif
-#ifdef ZCL_TEMPERATURE_MEASUREMENT
-    } else if (clusterId == ZCL_CLUSTER_MS_TEMPERATURE_MEASUREMENT) {
-    	 for (uint32_t i = 0; i < numAttr; i++) {
-    		 if(attr[i].attrID >= 0x1000 && attr[i].attrID < 0x1100) {
-    			 save |= BIT(NBIT_MY18B20_CONFIG);
-    		 }
-    	 }
-
-#endif
+        	{
+       			save |= BIT(NBIT_THERM_CONFIG);
+        	}
+ #endif // ZCL_THERMOSTAT
+ #ifdef ZCL_TEMPERATURE_MEASUREMENT
+        } else if (clusterId == ZCL_CLUSTER_MS_TEMPERATURE_MEASUREMENT) {
+       		save |= BIT(NBIT_MY18B20_CONFIG);
+ #endif // ZCL_TEMPERATURE_MEASUREMENT
 #endif // USE_SENSOR_MY18B20
-    } else if (clusterId == ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT) {
-    	 for (uint32_t i = 0; i < numAttr; i++) {
-    		 if(attr[i].attrID >= 0x2200 && attr[i].attrID < 0x2300) {
-    			 save |= BIT(NBIT_SENSOR_CONFIG);
-    		 } else {
-    			 // ZCL_ATTRID_RMS_VOLTAGE_SWELL_PERIOD, ZCL_ATTRID_RMS_EXTREME_OVER_VOLTAGE..ZCL_ATTRID_RMS_VOLTAGE_SWELL
-    			 save |= BIT(NBIT_MIN_MAX_CONFIG);
-    		 }
-    	 }
+		} else if (clusterId == ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT) {
+			if (attrID >= ZCL_ATTRID_CURRENT_COEF
+				&& attrID <= ZCL_ATTRID_FGREQ_COEF) {
+				save |= BIT(NBIT_SENSOR_CONFIG);
+			} else {
+				save |= BIT(NBIT_MIN_MAX_CONFIG);
+			}
+		}
+	}
+    if (save & BIT(NBIT_SENSOR_CONFIG)) {
+    	save_config_sensor();
     }
-
-    if (save & BIT(NBIT_REALAY_CONFIG)) relay_settings_save();
-    if (save & BIT(NBIT_SENSOR_CONFIG)) save_config_sensor();
-    if (save & BIT(NBIT_MIN_MAX_CONFIG)) save_config_min_max();
+    if (save & BIT(NBIT_MIN_MAX_CONFIG)) {
+    	save_config_min_max();
+    }
 #if USE_SENSOR_MY18B20
-#ifdef ZCL_THERMOSTAT
-    if (save &  BIT(NBIT_THERM_CONFIG)) save_config_termostat();
+ #ifdef ZCL_THERMOSTAT
+    if (save &  BIT(NBIT_THERM_CONFIG)) {
+    	save_config_termostat();
+    	// restore relay
+#if USE_SENSOR_MY18B20
+    	set_therm_relay_status(cfg_on_off.onOff);
+#else
+		set_relay_status(cfg_on_off.onOff);
 #endif
-    if (save &  BIT(NBIT_MY18B20_CONFIG)) save_config_my18b20();
+    }
+ #endif
+    if (save &  BIT(NBIT_MY18B20_CONFIG)) {
+    	save_config_my18b20();
+    }
 #endif // USE_SENSOR_MY18B20
+    if (save & BIT(NBIT_ON_OFF_CONFIG)) {
+    	save_config_on_off();
 
+//    	led_set_control();	// restore led?
+    	// restore relay
+#if USE_THERMOSTAT // USE_SENSOR_MY18B20
+    	set_therm_relay_status(cfg_on_off.onOff);
+#else
+		set_relay_status(cfg_on_off.onOff);
+#endif
+    }
 #ifdef ZCL_POLL_CTRL
     if(clusterId == ZCL_CLUSTER_GEN_POLL_CONTROL){
         for(int32_t i = 0; i < numAttr; i++){
@@ -316,11 +284,7 @@ static void app_zclWriteReqCmd(uint8_t epId, uint16_t clusterId, zclWriteCmd_t *
  *
  * @return  None
  */
-static void app_zclWriteRspCmd(zclWriteRspCmd_t *pWriteRspCmd)
-{
-//    printf("app_zclWriteRspCmd\n");
-
-}
+static void app_zclWriteRspCmd(zclWriteRspCmd_t *pWriteRspCmd) {}
 #endif
 
 
@@ -346,7 +310,7 @@ static void app_zclDfltRspCmd(zclDefaultRspCmd_t *pDftRspCmd)
 #endif
 }
 
-#ifdef ZCL_REPORT
+#if 0 //def ZCL_REPORT
 /*********************************************************************
  * @fn      app_zclCfgReportCmd
  *
@@ -878,55 +842,48 @@ status_t app_onOffCb(zclIncomingAddrInfo_t *pAddrInfo, u8 cmdId, void *cmdPayloa
 //    printf("app_onOffCb, dstEp: %d\r\n", pAddrInfo->dstEp);
 
     zcl_onOffAttr_t *pOnOff = zcl_onOffAttrsGet();
-    pOnOff += pAddrInfo->dstEp - 1;
+//    pOnOff += pAddrInfo->dstEp - 1;
 
     if(pAddrInfo->dstEp == APP_ENDPOINT1 || pAddrInfo->dstEp == APP_ENDPOINT2) {
-#if 0
-        if (relay_settings.switchType[pAddrInfo->dstEp-1] != ZCL_SWITCH_TYPE_MULTIFUNCTION) {
-#endif
-            switch(cmdId){
-                case ZCL_CMD_ONOFF_ON:
-//                    printf("pAddrInfo->dstEp: %d, cmd on\r\n", pAddrInfo->dstEp);
-                    cmdOnOff_on(pAddrInfo->dstEp);
-                    break;
-                case ZCL_CMD_ONOFF_OFF:
-//                    printf("pAddrInfo->dstEp: %d, cmd off\r\n", pAddrInfo->dstEp);
-                    cmdOnOff_off(pAddrInfo->dstEp);
-                    break;
-                case ZCL_CMD_ONOFF_TOGGLE:
-//                    printf("pAddrInfo->dstEp: %d, cmd toggle\r\n", pAddrInfo->dstEp);
-                    cmdOnOff_toggle(pAddrInfo->dstEp);
-                    break;
-//                case ZCL_CMD_OFF_WITH_EFFECT:
-//                    if(pOnOff->globalSceneControl == TRUE){
-//                        /* TODO: store its settings in its global scene */
-//
-//                        pOnOff->globalSceneControl = FALSE;
-//                    }
-//                    sampleLight_onoff_offWithEffectProcess((zcl_onoff_offWithEffectCmd_t *)cmdPayload);
-//                    break;
-                case ZCL_CMD_ON_WITH_RECALL_GLOBAL_SCENE:
-                    if(pOnOff->globalSceneControl == FALSE){
-//                        app_onoff_onWithRecallGlobalSceneProcess();
-                        pOnOff->globalSceneControl = TRUE;
-                    }
-                    break;
-//                case ZCL_CMD_ON_WITH_TIMED_OFF:
-//                    sampleLight_onoff_onWithTimedOffProcess((zcl_onoff_onWithTimeOffCmd_t *)cmdPayload);
-//                    break;
-                default:
-                    break;
+    	switch(cmdId){
+    		case ZCL_CMD_ONOFF_ON:
+    			cmdOnOff_on();
+                break;
+    		case ZCL_CMD_ONOFF_OFF:
+    			cmdOnOff_off();
+    			break;
+    		case ZCL_CMD_ONOFF_TOGGLE:
+    			cmdOnOff_toggle();
+    			break;
+//          case ZCL_CMD_OFF_WITH_EFFECT:
+//              if(pOnOff->globalSceneControl == TRUE)
+//   				/* TODO: store its settings in its global scene */
+//              	pOnOff->globalSceneControl = FALSE;
+//              }
+//              sampleLight_onoff_offWithEffectProcess((zcl_onoff_offWithEffectCmd_t *)cmdPayload);
+//              break;
+    		case ZCL_CMD_ON_WITH_RECALL_GLOBAL_SCENE:
+    			if(pOnOff->globalSceneControl == FALSE){
+//              	app_onoff_onWithRecallGlobalSceneProcess();
+                    pOnOff->globalSceneControl = TRUE;
+    			}
+    			break;
+//          case ZCL_CMD_ON_WITH_TIMED_OFF:
+//              sampleLight_onoff_onWithTimedOffProcess((zcl_onoff_onWithTimeOffCmd_t *)cmdPayload);
+//              break;
+            default:
+            	break;
             }
 #if 0
         } else {
-            printf("pAddrInfo->dstEp: %d, cmd off\r\n", pAddrInfo->dstEp);
-            cmdOnOff_off(pAddrInfo->dstEp);
+            cmdOnOff_off();
         }
 #endif
     }
 
     return ZCL_STA_SUCCESS;
 }
+
 
 status_t app_msInputCb(zclIncomingAddrInfo_t *pAddrInfo, uint8_t cmdId, void *cmdPayload) {
 
@@ -936,6 +893,7 @@ status_t app_msInputCb(zclIncomingAddrInfo_t *pAddrInfo, uint8_t cmdId, void *cm
 
     return status;
 }
+
 
 /*********************************************************************
  * @fn      app_meteringCb

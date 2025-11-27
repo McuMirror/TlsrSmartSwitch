@@ -3,6 +3,8 @@
 #include "smart_energy/zcl_metering.h"
 #include "zcl_se_metering.h"
 #include "app_sensor.h"
+#include "energy_save.h"
+
 
 _CODE_ZCL_ static status_t zcl_metering_getProfilePrc(zclIncoming_t *pInMsg)
 {

@@ -8,18 +8,13 @@
 #error "defined ZCL_BASIC_MODEL_ID & ZCL_BASIC_MFG_NAME !"
 #endif
 
-// Custom Attr
-#define ZCL_TEMPERATURE_SENSOR_HYSTERESIS	0x2000
-#define ZCL_TEMPERATURE_SENSOR_MULTIPLER	0x2001
-#define ZCL_TEMPERATURE_SENSOR_ZERO			0x2002
-
 #ifndef ZCL_BASIC_SW_BUILD_ID
 
 #define ZCL_BASIC_SW_BUILD_ID   {9 \
-                                ,'0'+(STACK_RELEASE>>4) \
-                                ,'0'+(STACK_RELEASE & 0xf) \
-                                ,'0'+(STACK_BUILD>>4) \
-                                ,'0'+(STACK_BUILD & 0xf) \
+                                ,'0'+ USE_BL0942 + (USE_BL0937<<3) \
+                                ,'0'+ USE_SENSOR_MY18B20 \
+                                ,'0'+ USE_THERMOSTAT \
+                                ,'0'+ USE_SWITCH \
                                 ,'-' \
                                 ,'0'+(APP_RELEASE>>4) \
                                 ,'0'+(APP_RELEASE & 0xf) \
@@ -73,7 +68,9 @@ const uint16_t app_ep1_inClusterList[] = {
 #endif
 #ifdef ZCL_ON_OFF
     ZCL_CLUSTER_GEN_ON_OFF,
+ #if USE_SWITCH
     ZCL_CLUSTER_GEN_ON_OFF_SWITCH_CONFIG,
+ #endif
 #endif
 #ifdef ZCL_MULTISTATE_INPUT
     ZCL_CLUSTER_GEN_MULTISTATE_INPUT_BASIC,
@@ -126,55 +123,6 @@ const af_simple_descriptor_t app_ep1_simpleDesc =
     (uint16_t *)app_ep1_outClusterList,         /* Application output cluster list */
 };
 
-
-///**
-// *  @brief Definition for Incoming cluster / Sever Cluster
-// */
-//const uint16_t app_ep2_inClusterList[] = {
-//#ifdef ZCL_GROUP
-//    ZCL_CLUSTER_GEN_GROUPS,
-//#endif
-//#ifdef ZCL_SCENE
-//    ZCL_CLUSTER_GEN_SCENES,
-//#endif
-//#ifdef ZCL_ON_OFF
-//    ZCL_CLUSTER_GEN_ON_OFF,
-//    ZCL_CLUSTER_GEN_ON_OFF_SWITCH_CONFIG,
-//#endif
-//    ZCL_CLUSTER_GEN_MULTISTATE_INPUT_BASIC,
-//};
-//
-///**
-// *  @brief Definition for Outgoing cluster / Client Cluster
-// */
-//const uint16_t app_ep2_outClusterList[] = {
-//#ifdef ZCL_ON_OFF
-//    ZCL_CLUSTER_GEN_ON_OFF,
-//#endif
-//};
-//
-///**
-// *  @brief Definition for Server cluster number and Client cluster number
-// */
-//#define APP_EP2_IN_CLUSTER_NUM      (sizeof(app_ep2_inClusterList)/sizeof(app_ep2_inClusterList[0]))
-//#define APP_EP2_OUT_CLUSTER_NUM     (sizeof(app_ep2_outClusterList)/sizeof(app_ep2_outClusterList[0]))
-//
-///**
-// *  @brief Definition for simple description for HA profile
-// */
-//const af_simple_descriptor_t app_ep2_simpleDesc =
-//{
-//    HA_PROFILE_ID,                          /* Application profile identifier */
-//    HA_DEV_ONOFF_LIGHT,                     /* Application device identifier */
-//    APP_ENDPOINT2,                          /* Endpoint */
-//    1,                                      /* Application device version */
-//    0,                                      /* Reserved */
-//    APP_EP2_IN_CLUSTER_NUM,                     /* Application input cluster count */
-//    APP_EP2_OUT_CLUSTER_NUM,                    /* Application output cluster count */
-//    (uint16_t *)app_ep2_inClusterList,          /* Application input cluster list */
-//    (uint16_t *)app_ep2_outClusterList,         /* Application output cluster list */
-//};
-
 /* Basic */
 zcl_basicAttr_t g_zcl_basicAttrs =
 {
@@ -189,8 +137,6 @@ zcl_basicAttr_t g_zcl_basicAttrs =
     .swBuildId      = ZCL_BASIC_SW_BUILD_ID,
     .deviceEnable   = TRUE,
 };
-
-uint8_t zclVersionServer;
 
 const zclAttrInfo_t basic_attrTbl[] =
 {
@@ -210,6 +156,7 @@ const zclAttrInfo_t basic_attrTbl[] =
 
 #define ZCL_BASIC_ATTR_NUM    sizeof(basic_attrTbl) / sizeof(zclAttrInfo_t)
 
+/*
 uint8_t zclVersionServer;
 
 const zclAttrInfo_t version_attrTbl[] =
@@ -220,7 +167,7 @@ const zclAttrInfo_t version_attrTbl[] =
 };
 
 #define ZCL_BASIC_SERVER_ATTR_NUM    sizeof(version_attrTbl) / sizeof(zclAttrInfo_t)
-
+*/
 
 /* Identify */
 zcl_identifyAttr_t g_zcl_identifyAttrs =
@@ -254,47 +201,65 @@ const zclAttrInfo_t identify_attrTbl[] =
 //
 //#define ZCL_TIME_ATTR_NUM    sizeof(time_attrTbl) / sizeof(zclAttrInfo_t)
 
-
-
 #ifdef ZCL_THERMOSTAT
+
 zcl_thermostatAttr_t zcl_thermostat_attrs = {
 		.local_temp = 0x8000, // in 0.01 C
-		.cfg.temp_cooling = 2400, // in 0.01 C
-		.cfg.temp_heating = 2100, // in 0.01 C
 		.min_temp = -5000, // in 0.01 C
 		.max_temp = 12500, // in 0.01 C
+		.relay_state = 0,
+		.cool_on = 0,
+		.healt_on = 0,
 		.operation = 5,
+		.run_mode = 0,
+		.occupancy = 1,
+//		.remote_sensing = 0,
+
+		.cfg.temp_cooling = 2400, // in 0.01 C
+		.cfg.temp_heating = 2100, // in 0.01 C
+		.cfg.sys_mode = TH_SMODE_OFF,
+		.cfg.temp_z8 = 0,
 };
 
 const zclAttrInfo_t thermostat_ui_cfg_attrTbl[] =
 {
-	{ZCL_ATTRID_HVAC_THERMOSTAT_LOCAL_TEMPERATURE,	ZCL_INT16,  RR,      (uint8_t*)&zcl_thermostat_attrs.local_temp },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_ABS_MIN_HEAT_SETPOINT_LIMIT, ZCL_INT16,  R,      (uint8_t*)&zcl_thermostat_attrs.min_temp },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_ABS_MAX_HEAT_SETPOINT_LIMIT, ZCL_INT16,  R,      (uint8_t*)&zcl_thermostat_attrs.max_temp },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_ABS_MIN_COOL_SETPOINT_LIMIT, ZCL_INT16,  R,      (uint8_t*)&zcl_thermostat_attrs.min_temp },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_ABS_MAX_COOL_SETPOINT_LIMIT, ZCL_INT16,  R,      (uint8_t*)&zcl_thermostat_attrs.max_temp },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_PI_COOLING_DEMAND, ZCL_UINT8,  RR,      (uint8_t*)&zcl_thermostat_attrs.cool_on  },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_PI_HEATING_DEMAND, ZCL_UINT8,  RR,      (uint8_t*)&zcl_thermostat_attrs.healt_on  },
+	{ZCL_ATTRID_HVAC_THERMOSTAT_LOCAL_TEMPERATURE, ZCL_INT16, RR, (uint8_t*)&zcl_thermostat_attrs.local_temp },
+	{ZCL_ATTRID_HVAC_THERMOSTAT_OCCUPANCY, ZCL_BITMAP8, R, (uint8_t*)&zcl_thermostat_attrs.occupancy},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_ABS_MIN_HEAT_SETPOINT_LIMIT, ZCL_INT16, R, (uint8_t*)&zcl_thermostat_attrs.min_temp},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_ABS_MAX_HEAT_SETPOINT_LIMIT, ZCL_INT16, R, (uint8_t*)&zcl_thermostat_attrs.max_temp},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_ABS_MIN_COOL_SETPOINT_LIMIT, ZCL_INT16, R, (uint8_t*)&zcl_thermostat_attrs.min_temp},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_ABS_MAX_COOL_SETPOINT_LIMIT, ZCL_INT16, R, (uint8_t*)&zcl_thermostat_attrs.max_temp},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_PI_COOLING_DEMAND, ZCL_UINT8, RR, (uint8_t*)&zcl_thermostat_attrs.cool_on},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_PI_HEATING_DEMAND, ZCL_UINT8, RR, (uint8_t*)&zcl_thermostat_attrs.healt_on},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_LOCAL_TEMP_CALIBRATION, ZCL_INT8, RW, (uint8_t*)&zcl_thermostat_attrs.cfg.temp_z8},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_OCCUPIED_COOLING_SETPOINT, ZCL_INT16, RW, (uint8_t*)&zcl_thermostat_attrs.cfg.temp_cooling},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_OCCUPIED_HEATING_SETPOINT, ZCL_INT16, RW, (uint8_t*)&zcl_thermostat_attrs.cfg.temp_heating},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_UNOCCUPIED_COOLING_SETPOINT, ZCL_INT16, RW, (uint8_t*)&zcl_thermostat_attrs.cfg.temp_heating},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_UNOCCUPIED_HEATING_SETPOINT, ZCL_INT16, RW, (uint8_t*)&zcl_thermostat_attrs.cfg.temp_cooling},
+//	{ZCL_ATTRID_HVAC_THERMOSTAT_MIN_HEAT_SETPOINT_LIMIT, ZCL_INT16, RW, (uint8_t*)&my18b20.coef.min_temp},
+//	{ZCL_ATTRID_HVAC_THERMOSTAT_MAX_HEAT_SETPOINT_LIMIT, ZCL_INT16, RW, (uint8_t*)&my18b20.coef.max_temp},
+//	{ZCL_ATTRID_HVAC_THERMOSTAT_MIN_COOL_SETPOINT_LIMIT, ZCL_INT16, RW, (uint8_t*)&zcl_thermostat_attrs.cfg.min_temp},
+//	{ZCL_ATTRID_HVAC_THERMOSTAT_MAX_COOL_SETPOINT_LIMIT, ZCL_INT16, RW, (uint8_t*)&zcl_thermostat_attrs.cfg.max_temp},
+//	{ZCL_ATTRID_HVAC_THERMOSTAT_REMOTE_SENSING, ZCL_ENUM8, RW, (uint8_t*)&zcl_thermostat_attrs.remote_sensing},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_CTRL_SEQUENCE_OF_OPERATION, ZCL_ENUM8, RW, (uint8_t*)&zcl_thermostat_attrs.operation},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_SYS_MODE, ZCL_ENUM8, RW, (uint8_t*)&zcl_thermostat_attrs.cfg.sys_mode},
 
-	{ZCL_ATTRID_HVAC_THERMOSTAT_LOCAL_TEMP_CALIBRATION, ZCL_INT8,  RW,      (uint8_t*)&zcl_thermostat_attrs.cfg.temp_z8  },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_OCCUPIED_COOLING_SETPOINT, ZCL_INT16,  RW,      (uint8_t*)&zcl_thermostat_attrs.cfg.temp_cooling },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_OCCUPIED_HEATING_SETPOINT, ZCL_INT16,  RW,      (uint8_t*)&zcl_thermostat_attrs.cfg.temp_heating },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_CTRL_SEQUENCE_OF_OPERATION, ZCL_ENUM8,  RW,      (uint8_t*)&zcl_thermostat_attrs.operation },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_SYS_MODE, ZCL_ENUM8,  RW,      (uint8_t*)&zcl_thermostat_attrs.cfg.sys_mode },
-
-	{ZCL_ATTRID_HVAC_THERMOSTAT_RUNNING_MODE, ZCL_ENUM8,  R,      (uint8_t*)&zcl_thermostat_attrs.run_mode },
-	{ZCL_ATTRID_HVAC_THERMOSTAT_AC_ERROR_CODE, ZCL_BITMAP32,  RW,      (uint8_t*)&zcl_thermostat_attrs.errors },
-
-#if USE_TRIGGER
-	{ ZCL_THERMOSTAT_UI_CFG_ATTRID_TRIGGER_TRH_T,   ZCL_INT16,    RW, (u8*)&trg.temp_threshold },
-	{ ZCL_THERMOSTAT_UI_CFG_ATTRID_TRIGGER_HST_T,   ZCL_INT16,    RW, (u8*)&trg.temp_hysteresis },
-#endif
+	{ZCL_ATTRID_HVAC_THERMOSTAT_RUNNING_MODE, ZCL_ENUM8, R, (uint8_t*)&zcl_thermostat_attrs.run_mode},
+	{ZCL_ATTRID_HVAC_THERMOSTAT_RUNNING_STATE, ZCL_DATA_TYPE_BITMAP16, R, (uint8_t*)&zcl_thermostat_attrs.relay_state},
+	//{ZCL_ATTRID_HVAC_THERMOSTAT_AC_ERROR_CODE, ZCL_BITMAP8, RW, (uint8_t*)&my18b20.errors},
+	//{ZCL_ATTRID_HVAC_THERMOSTAT_SETPOINT_CHANGE_SOURCE, ZCL_ENUM8,  R, (uint8_t*)},
+	//{ZCL_ATTRID_HVAC_THERMOSTAT_SETPOINT_CHANGE_AMOUNT, ZCL_INT16,  R, (uint8_t*)},
 	// Custom Attr:
-	{ ZCL_TEMPERATURE_SENSOR_HYSTERESIS,	ZCL_INT16,	RW, (u8*)&my18b20.coef.temp_hysteresis },
-	{ ZCL_TEMPERATURE_SENSOR_MULTIPLER,     ZCL_UINT32, RW, (u8*)&my18b20.coef.temp_k },
-	{ ZCL_TEMPERATURE_SENSOR_ZERO,          ZCL_INT16,  RW, (u8*)&my18b20.coef.temp_z },
-
-	{ ZCL_ATTRID_GLOBAL_CLUSTER_REVISION, 	ZCL_UINT16,  	R, (u8*)&zcl_attr_global_clusterRevision},
+#ifndef ZCL_TEMPERATURE_MEASUREMENT
+	{ ZCL_TEMPERATURE_SENSOR_ID,     		ZCL_UINT32, R, (uint8_t*)&my18b20.id },
+	{ ZCL_TEMPERATURE_SENSOR_ERRORS,     	ZCL_BITMAP8, R, (uint8_t*)&my18b20.errors },
+	{ ZCL_TEMPERATURE_SENSOR_MULTIPLER,     ZCL_UINT32, RW, (uint8_t*)&my18b20.coef.temp_k },
+	{ ZCL_TEMPERATURE_SENSOR_ZERO,          ZCL_INT16,  RW, (uint8_t*)&my18b20.coef.temp_z },
+	{ ZCL_TEMPERATURE_SENSOR_HYSTERESIS,	ZCL_INT16,	RW, (uint8_t*)&my18b20.coef.temp_hysteresis },
+	{ ZCL_TEMPERATURE_MIN,          		ZCL_INT16,  RW, (uint8_t*)&my18b20.coef.min_temp },
+	{ ZCL_TEMPERATURE_MAX,     				ZCL_UINT32, RW, (uint8_t*)&my18b20.coef.min_temp },
+#endif
+	{ ZCL_ATTRID_GLOBAL_CLUSTER_REVISION, 	ZCL_UINT16,  	R, (uint8_t*)&zcl_attr_global_clusterRevision},
 };
 
 #define	ZCL_THERMOSTAT_UI_CFG_ATTR_NUM		 sizeof(thermostat_ui_cfg_attrTbl) / sizeof(zclAttrInfo_t)
@@ -312,14 +277,18 @@ zcl_temperatureAttr_t g_zcl_temperatureAttrs =
 
 const zclAttrInfo_t temperature_measurement_attrTbl[] =
 {
-	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_MEASUREDVALUE,       	ZCL_INT16,    RR, (u8*)&g_zcl_temperatureAttrs.measuredValue },
-	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_MINMEASUREDVALUE,      ZCL_INT16,    R,  (u8*)&g_zcl_temperatureAttrs.minValue },
-	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_MAXMEASUREDVALUE,      ZCL_INT16,    R,  (u8*)&g_zcl_temperatureAttrs.maxValue },
-	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_TOLERANCE,       		ZCL_UINT16,   R,  (u8*)&g_zcl_temperatureAttrs.tolerance },
-	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_TRG_TRH_T,             ZCL_INT16,    RW, (u8*)&my18b20.coef.temp_threshold },
-	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_TRG_HST_T,				ZCL_INT16,    RW, (u8*)&my18b20.coef.temp_hysteresis },
-	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_CFC_T,                 ZCL_UINT32,   RW, (u8*)&my18b20.coef.temp_k },
-	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_ZR_T,                  ZCL_INT16,    RW, (u8*)&my18b20.coef.temp_z },
+	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_MEASUREDVALUE,       	ZCL_INT16,    RR, (uint8_t*)&g_zcl_temperatureAttrs.measuredValue },
+	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_MINMEASUREDVALUE,      ZCL_INT16,    R,  (uint8_t*)&g_zcl_temperatureAttrs.minValue },
+	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_MAXMEASUREDVALUE,      ZCL_INT16,    R,  (uint8_t*)&g_zcl_temperatureAttrs.maxValue },
+	{ ZCL_TEMPERATURE_MEASUREMENT_ATTRID_TOLERANCE,       		ZCL_UINT16,   R,  (uint8_t*)&g_zcl_temperatureAttrs.tolerance },
+	// Custom Attr:
+	{ ZCL_TEMPERATURE_SENSOR_ID,     		ZCL_UINT32, R, (uint8_t*)&my18b20.id },
+	{ ZCL_TEMPERATURE_SENSOR_ERRORS,     	ZCL_BITMAP8, R, (uint8_t*)&my18b20.errors },
+	{ ZCL_TEMPERATURE_SENSOR_MULTIPLER,     ZCL_UINT32, RW, (uint8_t*)&my18b20.coef.temp_k },
+	{ ZCL_TEMPERATURE_SENSOR_ZERO,          ZCL_INT16,  RW, (uint8_t*)&my18b20.coef.temp_z },
+	{ ZCL_TEMPERATURE_SENSOR_HYSTERESIS,	ZCL_INT16,	RW, (uint8_t*)&my18b20.coef.temp_hysteresis },
+	{ ZCL_TEMPERATURE_MIN,          		ZCL_INT16,  RW, (uint8_t*)&my18b20.coef.min_temp },
+	{ ZCL_TEMPERATURE_MAX,     				ZCL_UINT32, RW, (uint8_t*)&my18b20.coef.min_temp },
 
 	{ ZCL_ATTRID_GLOBAL_CLUSTER_REVISION, 	ZCL_DATA_TYPE_UINT16,  	ACCESS_CONTROL_READ,  						(u8*)&zcl_attr_global_clusterRevision},
 };
@@ -328,211 +297,129 @@ const zclAttrInfo_t temperature_measurement_attrTbl[] =
 #endif
 
 #ifdef ZCL_MULTISTATE_INPUT
-zcl_msInputAttr_t g_zcl_msInputAttrs[AMT_RELAY] = {
-    {
+
+zcl_msInputAttr_t g_zcl_msInputAttrs = {
         .value = ACTION_EMPTY,
         .num = 8,
         .out_of_service = 0,
-        .status_flag = 0,
-    },
-//    {
-//        .value = ACTION_EMPTY,
-//        .num = 8,
-//        .out_of_service = 0,
-//        .status_flag = 0,
-//    }
+        .status_flag = 0
 };
 
 const zclAttrInfo_t msInput1_attrTbl[] = {
-        { ZCL_MULTISTATE_INPUT_ATTRID_OUT_OF_SERVICE,   ZCL_BOOLEAN,    RW,     (uint8_t*)&g_zcl_msInputAttrs[0].out_of_service },
-        { ZCL_MULTISTATE_INPUT_ATTRID_PRESENT_VALUE,    ZCL_UINT16,     RWR,    (uint8_t*)&g_zcl_msInputAttrs[0].value          },
-        { ZCL_MULTISTATE_INPUT_ATTRID_STATUS_FLAGS,     ZCL_BITMAP8,    RR,     (uint8_t*)&g_zcl_msInputAttrs[0].status_flag    },
-        { ZCL_MULTISTATE_INPUT_ATTRID_NUM_OF_STATES,    ZCL_UINT16,     R,      (uint8_t*)&g_zcl_msInputAttrs[0].num            },
+	{ ZCL_MULTISTATE_INPUT_ATTRID_OUT_OF_SERVICE,   ZCL_BOOLEAN,    RW,     (uint8_t*)&g_zcl_msInputAttrs.out_of_service },
+	{ ZCL_MULTISTATE_INPUT_ATTRID_PRESENT_VALUE,    ZCL_UINT16,     RWR,    (uint8_t*)&g_zcl_msInputAttrs.value          },
+	{ ZCL_MULTISTATE_INPUT_ATTRID_STATUS_FLAGS,     ZCL_BITMAP8,    RR,     (uint8_t*)&g_zcl_msInputAttrs.status_flag    },
+	{ ZCL_MULTISTATE_INPUT_ATTRID_NUM_OF_STATES,    ZCL_UINT16,     R,      (uint8_t*)&g_zcl_msInputAttrs.num            },
 
-        { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,           ZCL_UINT16,     R,      (uint8_t*)&zcl_attr_global_clusterRevision      },
-
+	{ ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,           ZCL_UINT16,     R,      (uint8_t*)&zcl_attr_global_clusterRevision      },
 };
 
 #define ZCL_MSINPUT1_ATTR_NUM   sizeof(msInput1_attrTbl) / sizeof(zclAttrInfo_t)
 
-//const zclAttrInfo_t msInput2_attrTbl[] = {
-//        { ZCL_MULTISTATE_INPUT_ATTRID_OUT_OF_SERVICE,   ZCL_BOOLEAN,    RW,     (uint8_t*)&g_zcl_msInputAttrs[1].out_of_service },
-//        { ZCL_MULTISTATE_INPUT_ATTRID_PRESENT_VALUE,    ZCL_UINT16,     RWR,    (uint8_t*)&g_zcl_msInputAttrs[1].value          },
-//        { ZCL_MULTISTATE_INPUT_ATTRID_STATUS_FLAGS,     ZCL_BITMAP8,    RR,     (uint8_t*)&g_zcl_msInputAttrs[1].status_flag    },
-//        { ZCL_MULTISTATE_INPUT_ATTRID_NUM_OF_STATES,    ZCL_UINT16,     R,      (uint8_t*)&g_zcl_msInputAttrs[1].num            },
-//
-//        { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,           ZCL_UINT16,     R,      (uint8_t*)&zcl_attr_global_clusterRevision      },
-//
-//};
-//
-//#define ZCL_MSINPUT2_ATTR_NUM   sizeof(msInput2_attrTbl) / sizeof(zclAttrInfo_t)
-#endif
+#endif // ZCL_MULTISTATE_INPUT
 
 #ifdef ZCL_GROUP
 /* Group */
-zcl_groupAttr_t g_zcl_groupAttrs[AMT_RELAY] =
+zcl_groupAttr_t g_zcl_groupAttrs =
 {
-    {.nameSupport = 0},
-//    {.nameSupport = 0}
+    .nameSupport = 0
 };
 
 const zclAttrInfo_t group1_attrTbl[] =
 {
-    { ZCL_ATTRID_GROUP_NAME_SUPPORT,        ZCL_BITMAP8,    R,  (uint8_t*)&g_zcl_groupAttrs[0].nameSupport     },
+    { ZCL_ATTRID_GROUP_NAME_SUPPORT,        ZCL_BITMAP8,    R,  (uint8_t*)&g_zcl_groupAttrs.nameSupport     },
 
     { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,     R,  (uint8_t*)&zcl_attr_global_clusterRevision  },
 };
 
 #define ZCL_GROUP1_ATTR_NUM    sizeof(group1_attrTbl) / sizeof(zclAttrInfo_t)
 
-//const zclAttrInfo_t group2_attrTbl[] =
-//{
-//    { ZCL_ATTRID_GROUP_NAME_SUPPORT,        ZCL_BITMAP8,    R,  (uint8_t*)&g_zcl_groupAttrs[1].nameSupport     },
-//
-//    { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,     R,  (uint8_t*)&zcl_attr_global_clusterRevision  },
-//};
-//
-//#define ZCL_GROUP2_ATTR_NUM    sizeof(group2_attrTbl) / sizeof(zclAttrInfo_t)
-
 #endif
 
 #ifdef ZCL_SCENE
 /* Scene */
-zcl_sceneAttr_t g_zcl_sceneAttrs[AMT_RELAY] =
+zcl_sceneAttr_t g_zcl_sceneAttrs =
 {
-    {
         .sceneCount     = 0,
         .currentScene   = 0,
         .currentGroup   = 0x0000,
         .sceneValid     = FALSE,
         .nameSupport    = 0,
-    },
-//    {
-//        .sceneCount     = 0,
-//        .currentScene   = 0,
-//        .currentGroup   = 0x0000,
-//        .sceneValid     = FALSE,
-//        .nameSupport    = 0,
-//    }
 };
 
 const zclAttrInfo_t scene1_attrTbl[] = {
-    { ZCL_ATTRID_SCENE_SCENE_COUNT,         ZCL_UINT8,    R,  (uint8_t*)&g_zcl_sceneAttrs[0].sceneCount     },
-    { ZCL_ATTRID_SCENE_CURRENT_SCENE,       ZCL_UINT8,    R,  (uint8_t*)&g_zcl_sceneAttrs[0].currentScene   },
-    { ZCL_ATTRID_SCENE_CURRENT_GROUP,       ZCL_UINT16,   R,  (uint8_t*)&g_zcl_sceneAttrs[0].currentGroup   },
-    { ZCL_ATTRID_SCENE_SCENE_VALID,         ZCL_BOOLEAN,  R,  (uint8_t*)&g_zcl_sceneAttrs[0].sceneValid     },
-    { ZCL_ATTRID_SCENE_NAME_SUPPORT,        ZCL_BITMAP8,  R,  (uint8_t*)&g_zcl_sceneAttrs[0].nameSupport    },
+    { ZCL_ATTRID_SCENE_SCENE_COUNT,         ZCL_UINT8,    R,  (uint8_t*)&g_zcl_sceneAttrs.sceneCount     },
+    { ZCL_ATTRID_SCENE_CURRENT_SCENE,       ZCL_UINT8,    R,  (uint8_t*)&g_zcl_sceneAttrs.currentScene   },
+    { ZCL_ATTRID_SCENE_CURRENT_GROUP,       ZCL_UINT16,   R,  (uint8_t*)&g_zcl_sceneAttrs.currentGroup   },
+    { ZCL_ATTRID_SCENE_SCENE_VALID,         ZCL_BOOLEAN,  R,  (uint8_t*)&g_zcl_sceneAttrs.sceneValid     },
+    { ZCL_ATTRID_SCENE_NAME_SUPPORT,        ZCL_BITMAP8,  R,  (uint8_t*)&g_zcl_sceneAttrs.nameSupport    },
 
     { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,   R,  (uint8_t*)&zcl_attr_global_clusterRevision},
 };
 
 #define ZCL_SCENE1_ATTR_NUM   sizeof(scene1_attrTbl) / sizeof(zclAttrInfo_t)
-
-//const zclAttrInfo_t scene2_attrTbl[] = {
-//    { ZCL_ATTRID_SCENE_SCENE_COUNT,         ZCL_UINT8,    R,  (uint8_t*)&g_zcl_sceneAttrs[1].sceneCount     },
-//    { ZCL_ATTRID_SCENE_CURRENT_SCENE,       ZCL_UINT8,    R,  (uint8_t*)&g_zcl_sceneAttrs[1].currentScene   },
-//    { ZCL_ATTRID_SCENE_CURRENT_GROUP,       ZCL_UINT16,   R,  (uint8_t*)&g_zcl_sceneAttrs[1].currentGroup   },
-//    { ZCL_ATTRID_SCENE_SCENE_VALID,         ZCL_BOOLEAN,  R,  (uint8_t*)&g_zcl_sceneAttrs[1].sceneValid     },
-//    { ZCL_ATTRID_SCENE_NAME_SUPPORT,        ZCL_BITMAP8,  R,  (uint8_t*)&g_zcl_sceneAttrs[1].nameSupport    },
-//
-//    { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,   R,  (uint8_t*)&zcl_attr_global_clusterRevision},
-//};
-//
-//#define ZCL_SCENE2_ATTR_NUM   sizeof(scene2_attrTbl) / sizeof(zclAttrInfo_t)
-
 #endif
 
 #ifdef ZCL_ON_OFF
 
 /* On/Off */
-zcl_onOffAttr_t g_zcl_onOffAttrs[AMT_RELAY] = {
-    {
-        //
-        .onOff              = 0x00,
+const config_on_off_t cfg_on_off_def = {
+		.onOff          = 0x00,
+        .key_lock       = 0x00,
+        .led_control    = CONTROL_LED_ON_OFF,
+		.startUpOnOff   = ZCL_START_UP_ONOFF_SET_ONOFF_TO_OFF,
+#if USE_SWITCH
+		.switchType = ZCL_SWITCH_TYPE_MOMENTARY,         // 0x00 - toggle, 0x01 - momentary, 0x02 - multifunction, 0x03 - thermostat
+		.switchActions = ZCL_SWITCH_ACTION_OFF_ON,
+		.switchDecoupled = CUSTOM_SWITCH_DECOUPLED_OFF
+#endif
+};
+
+config_on_off_t cfg_on_off, cfg_on_off_saved;
+
+zcl_onOffAttr_t g_zcl_onOffAttrs = {
         .globalSceneControl = 1,
         .onTime             = 0x0000,
         .offWaitTime        = 0x0000,
-        .startUpOnOff       = ZCL_START_UP_ONOFF_SET_ONOFF_TO_OFF,
-    },
-//    {
-//        .onOff              = 0x00,
-//        .globalSceneControl = 1,
-//        .onTime             = 0x0000,
-//        .offWaitTime        = 0x0000,
-//        .startUpOnOff       = ZCL_START_UP_ONOFF_SET_ONOFF_TO_OFF,
-//    }
 };
 
 const zclAttrInfo_t onOff1_attrTbl[] = {
-    { ZCL_ATTRID_ONOFF,                     ZCL_BOOLEAN,    RR,     (uint8_t*)&g_zcl_onOffAttrs[0].onOff               },
-    { ZCL_ATTRID_GLOBAL_SCENE_CONTROL,      ZCL_BOOLEAN,    R,      (uint8_t*)&g_zcl_onOffAttrs[0].globalSceneControl  },
-    { ZCL_ATTRID_ON_TIME,                   ZCL_UINT16,     RW,     (uint8_t*)&g_zcl_onOffAttrs[0].onTime              },
-    { ZCL_ATTRID_OFF_WAIT_TIME,             ZCL_UINT16,     RW,     (uint8_t*)&g_zcl_onOffAttrs[0].offWaitTime         },
-    { ZCL_ATTRID_START_UP_ONOFF,            ZCL_ENUM8,      RW,     (uint8_t*)&g_zcl_onOffAttrs[0].startUpOnOff        },
+    { ZCL_ATTRID_ONOFF,                     ZCL_BOOLEAN,    RR,     (uint8_t*)&cfg_on_off.onOff               },
+    { ZCL_ATTRID_GLOBAL_SCENE_CONTROL,      ZCL_BOOLEAN,    R,      (uint8_t*)&g_zcl_onOffAttrs.globalSceneControl  },
+    { ZCL_ATTRID_ON_TIME,                   ZCL_UINT16,     RW,     (uint8_t*)&g_zcl_onOffAttrs.onTime              },
+    { ZCL_ATTRID_OFF_WAIT_TIME,             ZCL_UINT16,     RW,     (uint8_t*)&g_zcl_onOffAttrs.offWaitTime         },
+    { ZCL_ATTRID_START_UP_ONOFF,            ZCL_ENUM8,      RW,     (uint8_t*)&cfg_on_off.startUpOnOff        },
+	// Custom Attr:
+	{ ZCL_ATTRID_RELAY_STATE, 				ZCL_BOOLEAN,    RR,     (uint8_t*)&relay_state },
+	{ ZCL_ATTRID_CUSTOM_KEY_LOCK,           ZCL_BOOLEAN,    RW,     (uint8_t*)&cfg_on_off.key_lock        },
+    { ZCL_ATTRID_CUSTOM_LED,                ZCL_ENUM8,      RW,     (uint8_t*)&cfg_on_off.led_control     },
 
     { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,     R,      (uint8_t*)&zcl_attr_global_clusterRevision      },
 };
 
 #define ZCL_ONOFF1_ATTR_NUM   sizeof(onOff1_attrTbl) / sizeof(zclAttrInfo_t)
-
-//const zclAttrInfo_t onOff2_attrTbl[] = {
-//    { ZCL_ATTRID_ONOFF,                     ZCL_BOOLEAN,    RR,     (uint8_t*)&g_zcl_onOffAttrs[1].onOff               },
-//    { ZCL_ATTRID_GLOBAL_SCENE_CONTROL,      ZCL_BOOLEAN,    R,      (uint8_t*)&g_zcl_onOffAttrs[1].globalSceneControl  },
-//    { ZCL_ATTRID_ON_TIME,                   ZCL_UINT16,     RW,     (uint8_t*)&g_zcl_onOffAttrs[1].onTime              },
-//    { ZCL_ATTRID_OFF_WAIT_TIME,             ZCL_UINT16,     RW,     (uint8_t*)&g_zcl_onOffAttrs[1].offWaitTime         },
-//    { ZCL_ATTRID_START_UP_ONOFF,            ZCL_ENUM8,      RW,     (uint8_t*)&g_zcl_onOffAttrs[1].startUpOnOff        },
-//
-//    { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,     R,      (uint8_t*)&zcl_attr_global_clusterRevision      },
-//};
-//
-//#define ZCL_ONOFF2_ATTR_NUM   sizeof(onOff2_attrTbl) / sizeof(zclAttrInfo_t)
-
 #endif
 
 
 #ifdef ZCL_ON_OFF_SWITCH_CFG
 /* On/Off Config */
 
-zcl_onOffCfgAttr_t g_zcl_onOffCfgAttrs[AMT_RELAY] = {
-    {
-        .switchType        = ZCL_SWITCH_TYPE_MOMENTARY,
-        .switchActions     = ZCL_SWITCH_ACTION_OFF_ON,
-        .custom_swtichType = ZCL_SWITCH_TYPE_MOMENTARY,
-        .custom_decoupled  = CUSTOM_SWITCH_DECOUPLED_OFF,
-    },
-//    {
-//        .switchType        = ZCL_SWITCH_TYPE_MOMENTARY,
-//        .switchActions     = ZCL_SWITCH_ACTION_OFF_ON,
-//        .custom_swtichType = ZCL_SWITCH_TYPE_MOMENTARY,
-//        .custom_decoupled  = CUSTOM_SWITCH_DECOUPLED_OFF,
-//    }
-};
-
 const zclAttrInfo_t onOffCfg1_attrTbl[] =
 {
-    { ZCL_ATTRID_SWITCH_TYPE,               ZCL_ENUM8,    R,  (u8*)&g_zcl_onOffCfgAttrs[0].switchType         },
-    { ZCL_ATTRID_SWITCH_ACTION,             ZCL_ENUM8,    RW, (u8*)&g_zcl_onOffCfgAttrs[0].switchActions      },
-    { CUSTOM_ATTRID_SWITCH_TYPE,            ZCL_ENUM8,    RW, (u8*)&g_zcl_onOffCfgAttrs[0].custom_swtichType  },
-    { CUSTOM_ATTRID_DECOUPLED,              ZCL_ENUM8,    RWR,(u8*)&g_zcl_onOffCfgAttrs[0].custom_decoupled   },
+    { ZCL_ATTRID_SWITCH_TYPE,               ZCL_ENUM8,    R,  (u8*)&cfg_on_off.switchType         },
+    { ZCL_ATTRID_SWITCH_ACTION,             ZCL_ENUM8,    RW, (u8*)&cfg_on_off.switchActions      },
+	// Custom Attr:
+    { CUSTOM_ATTRID_SWITCH_TYPE,            ZCL_ENUM8,    RW, (u8*)&cfg_on_off.switchType  },
+    { CUSTOM_ATTRID_DECOUPLED,              ZCL_ENUM8,    RWR,(u8*)&cfg_on_off.switchDecoupled   },
 
     { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,   R,  (u8*)&zcl_attr_global_clusterRevision           },
 };
 
 #define ZCL_ON_OFF1_CFG_ATTR_NUM       sizeof(onOffCfg1_attrTbl) / sizeof(zclAttrInfo_t)
-
-//const zclAttrInfo_t onOffCfg2_attrTbl[] =
-//{
-//    { ZCL_ATTRID_SWITCH_TYPE,               ZCL_ENUM8,    R,  (u8*)&g_zcl_onOffCfgAttrs[1].switchType         },
-//    { ZCL_ATTRID_SWITCH_ACTION,             ZCL_ENUM8,    RW, (u8*)&g_zcl_onOffCfgAttrs[1].switchActions      },
-//    { CUSTOM_ATTRID_SWITCH_TYPE,            ZCL_ENUM8,    RW, (u8*)&g_zcl_onOffCfgAttrs[1].custom_swtichType  },
-//    { CUSTOM_ATTRID_DECOUPLED,              ZCL_ENUM8,    RWR,(u8*)&g_zcl_onOffCfgAttrs[1].custom_decoupled   },
-//
-//    { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,   R,  (u8*)&zcl_attr_global_clusterRevision           },
-//};
-//
-//#define ZCL_ON_OFF2_CFG_ATTR_NUM       sizeof(onOffCfg2_attrTbl) / sizeof(zclAttrInfo_t)
-
 #endif //ZCL_ON_OFF_SWITCH_CFG
+
+
+#ifdef ZCL_METERING_SUPPORT
 
 zcl_seAttr_t g_zcl_seAttrs = {
     .unit_of_measure = 0x00,                                        // kWh
@@ -556,6 +443,7 @@ const zclAttrInfo_t se_attrTbl[] = {
 };
 
 #define ZCL_SE_ATTR_NUM    sizeof(se_attrTbl) / sizeof(zclAttrInfo_t)
+#endif // ZCL_METERING_SUPPORT
 
 #ifdef ZCL_ALARMS
 u16 zcl_attr_alarmCount = 0;
@@ -572,6 +460,7 @@ const u8 zcl_alarm_attrNum = (sizeof(alarm_attrTbl) / sizeof(zclAttrInfo_t));
 
 #endif /* ZCL_ALARMS */
 
+#ifdef ZCL_ELECTRICAL_MEASUREMENT
 
 zcl_msAttr_t g_zcl_msAttrs = {
     .type = 0x09,               // bit0: Active measurement (AC). bit3: Phase A measurement
@@ -597,7 +486,7 @@ zcl_msAttr_t g_zcl_msAttrs = {
 #define MAX_CURRENT_DEF			25000 // 25.000A
 #endif
 #ifndef PERIOD_MAX_CURRENT_DEF
-#define PERIOD_MAX_CURRENT_DEF	0	// sec
+#define PERIOD_MAX_CURRENT_DEF	8	// sec
 #endif
 #ifndef PERIOD_RELOAD_DEF
 #define PERIOD_RELOAD_DEF	0	// sec
@@ -638,20 +527,25 @@ const zclAttrInfo_t ms_attrTbl[] = {
     {ZCL_ATTRID_AC_CURRENT_DIVISOR,         ZCL_UINT16,   R,    (uint8_t*)&g_zcl_msAttrs.current_divisor    },
     {ZCL_ATTRID_AC_POWER_MULTIPLIER,        ZCL_UINT16,   R,    (uint8_t*)&g_zcl_msAttrs.mutipler           },
     {ZCL_ATTRID_AC_POWER_DIVISOR,           ZCL_UINT16,   RR,   (uint8_t*)&g_zcl_msAttrs.power_divisor      },
+	// Custom Attr:
 	{ZCL_ATTRID_RMS_EXTREME_OVER_VOLTAGE,   ZCL_INT16,    RW,   (uint8_t*)&config_min_max.max_voltage		},
 	{ZCL_ATTRID_RMS_EXTREME_UNDER_VOLTAGE,  ZCL_INT16,    RW,   (uint8_t*)&config_min_max.min_voltage		},
 	{ZCL_ATTRID_RMS_VOLTAGE_SWELL,  		ZCL_INT16,    RW,   (uint8_t*)&config_min_max.max_current		},
-	{0x2200,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.current		},
-	{0x2201,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.voltage		},
-	{0x2202,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.power		},
+
+	{ZCL_ATTRID_EMERGENCY_OFF,  	ZCL_BITMAP8,   RW,   (uint8_t*)&config_min_max.emergency_off},
+	{ZCL_ATTRID_ALARM_FLAGS,  		ZCL_BITMAP8,   RWR,  (uint8_t*)&relay_off},
+	{ZCL_ATTRID_CURRENT_COEF,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.current		},
+	{ZCL_ATTRID_VOLTAGE_COEF,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.voltage		},
+	{ZCL_ATTRID_POWER_COEF,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.power		},
 #if USE_BL0942
-	{0x2203,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.energy		},
-	{0x2204,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.freq		},
+	{ZCL_ATTRID_ENERGY_COEF,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.energy		},
+	{ZCL_ATTRID_FGREQ_COEF,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.freq		},
 #endif
     {ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,    ZCL_UINT16,   R,    (uint8_t*)&zcl_attr_global_clusterRevision  }
 };
 
 #define ZCL_MS_ATTR_NUM    sizeof(ms_attrTbl) / sizeof(zclAttrInfo_t)
+#endif // ZCL_ELECTRICAL_MEASUREMENT
 
 /**
  *  @brief Definition for mini relay ZCL specific cluster
@@ -682,39 +576,26 @@ const zcl_specClusterInfo_t g_appClusterList1[] =
 #ifdef ZCL_TEMPERATURE_MEASUREMENT
 	{ZCL_CLUSTER_MS_TEMPERATURE_MEASUREMENT,	MANUFACTURER_CODE_NONE, ZCL_TEMPERATURE_MEASUREMENT_ATTR_NUM, temperature_measurement_attrTbl, 	zcl_temperature_measurement_register, 	NULL},
 #endif
+#ifdef ZCL_METERING_SUPPORT
     {ZCL_CLUSTER_SE_METERING,               MANUFACTURER_CODE_NONE, ZCL_SE_ATTR_NUM,            se_attrTbl,          app_zcl_metering_register,         app_meteringCb  },
+#endif
+#ifdef ZCL_ELECTRICAL_MEASUREMENT
     {ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT, MANUFACTURER_CODE_NONE, ZCL_MS_ATTR_NUM,            ms_attrTbl,          zcl_electricalMeasure_register,    NULL    },
+#endif
 };
 
 uint8_t APP_CB_CLUSTER_NUM1 = (sizeof(g_appClusterList1)/sizeof(g_appClusterList1[0]));
 
-//const zcl_specClusterInfo_t g_appClusterList2[] =
-//{
-//#ifdef ZCL_GROUP
-//    {ZCL_CLUSTER_GEN_GROUPS,                MANUFACTURER_CODE_NONE, ZCL_GROUP2_ATTR_NUM,         group2_attrTbl,      zcl_group_register,     NULL            },
-//#endif
-//#ifdef ZCL_SCENE
-//    {ZCL_CLUSTER_GEN_SCENES,                MANUFACTURER_CODE_NONE, ZCL_SCENE2_ATTR_NUM,         scene2_attrTbl,      zcl_scene_register,     app_sceneCb     },
-//#endif
-//#ifdef ZCL_ON_OFF
-//    {ZCL_CLUSTER_GEN_ON_OFF,                MANUFACTURER_CODE_NONE, ZCL_ONOFF2_ATTR_NUM,         onOff2_attrTbl,      zcl_onOff_register,     app_onOffCb     },
-//#endif
-//#ifdef ZCL_ON_OFF_SWITCH_CFG
-//    {ZCL_CLUSTER_GEN_ON_OFF_SWITCH_CONFIG,  MANUFACTURER_CODE_NONE, ZCL_ON_OFF2_CFG_ATTR_NUM,    onOffCfg2_attrTbl,   zcl_onoffCfg_register,  NULL            },
-//#endif
-//    {ZCL_CLUSTER_GEN_MULTISTATE_INPUT_BASIC,MANUFACTURER_CODE_NONE, ZCL_MSINPUT2_ATTR_NUM,       msInput2_attrTbl,    zcl_multistate_input_register,  app_msInputCb},
-//};
-//
-//uint8_t APP_CB_CLUSTER_NUM2 = (sizeof(g_appClusterList2)/sizeof(g_appClusterList2[0]));
-//
+
+#ifdef ZCL_ELECTRICAL_MEASUREMENT
 
 nv_sts_t load_config_min_max(void) {
 #if NV_ENABLE
-	nv_sts_t ret = nv_flashReadNew(1, NV_MODULE_APP,  NV_ITEM_APP_CFG_MIN_MAX, sizeof(config_min_max), (uint8_t*)&config_min_max);
+	nv_sts_t ret = nv_flashReadNew(1, NV_MODULE_APP,  NV_ITEM_APP_CFG_MIN_MAX, sizeof(config_min_max_saved), (uint8_t*)&config_min_max_saved);
 	if(ret !=  NV_SUCC) {
-		memcpy(&config_min_max, &def_config_min_max, sizeof(config_min_max));
+		memcpy(&config_min_max_saved, &def_config_min_max, sizeof(config_min_max));
 	}
-	memcpy(&config_min_max_saved, &config_min_max, sizeof(config_min_max));
+	memcpy(&config_min_max, &config_min_max_saved, sizeof(config_min_max));
 	return ret;
 #else
     return NV_ENABLE_PROTECT_ERROR;
@@ -726,7 +607,7 @@ nv_sts_t save_config_min_max(void) {
 	nv_sts_t ret = NV_SUCC;
 	if(memcmp(&config_min_max_saved, &config_min_max, sizeof(config_min_max))) {
 		memcpy(&config_min_max_saved, &config_min_max, sizeof(config_min_max));
-		ret = nv_flashWriteNew(1, NV_MODULE_APP,  NV_ITEM_APP_CFG_MIN_MAX, sizeof(config_min_max), (uint8_t*)&config_min_max);
+		ret = nv_flashWriteNew(1, NV_MODULE_APP,  NV_ITEM_APP_CFG_MIN_MAX, sizeof(config_min_max_saved), (uint8_t*)&config_min_max_saved);
 	}
     return ret;
 #else
@@ -734,6 +615,35 @@ nv_sts_t save_config_min_max(void) {
 #endif
 }
 
+#endif // ZCL_ELECTRICAL_MEASUREMENT
+
+nv_sts_t load_config_on_off(void) {
+#if NV_ENABLE
+	nv_sts_t ret = nv_flashReadNew(1, NV_MODULE_APP,  NV_ITEM_APP_CFG_ON_OFF, sizeof(cfg_on_off_saved), (uint8_t*)&cfg_on_off_saved);
+	if(ret !=  NV_SUCC) {
+		memcpy(&cfg_on_off_saved, &cfg_on_off_def, sizeof(cfg_on_off_saved));
+	}
+	memcpy(&cfg_on_off, &cfg_on_off_saved, sizeof(cfg_on_off));
+	return ret;
+#else
+    return NV_ENABLE_PROTECT_ERROR;
+#endif
+}
+
+nv_sts_t save_config_on_off(void) {
+#if NV_ENABLE
+	nv_sts_t ret = NV_SUCC;
+	if(memcmp(&cfg_on_off_saved, &cfg_on_off, sizeof(cfg_on_off))) {
+		memcpy(&cfg_on_off_saved, &cfg_on_off, sizeof(cfg_on_off));
+		ret = nv_flashWriteNew(1, NV_MODULE_APP,  NV_ITEM_APP_CFG_ON_OFF, sizeof(cfg_on_off_saved), (uint8_t*)&cfg_on_off_saved);
+	}
+    return ret;
+#else
+    return NV_ENABLE_PROTECT_ERROR;
+#endif
+}
+
+__attribute__((optimize("-Os")))
 void populate_date_code(void) {
 	u8 month;
 	if (__DATE__[0] == 'J' && __DATE__[1] == 'a' && __DATE__[2] == 'n') month = 1;

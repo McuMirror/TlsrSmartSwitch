@@ -1,4 +1,4 @@
-/********************************************************************************************************
+/************************************************************************************
  * @file    version_cfg.h
  *
  * @brief   This is the header file for version_cfg
@@ -21,7 +21,7 @@
  *          See the License for the specific language governing permissions and
  *          limitations under the License.
  *
- *******************************************************************************************************/
+ ***********************************************************************************/
 #ifndef _VERSION_CFG_H_
 #define _VERSION_CFG_H_
 
@@ -42,66 +42,46 @@
 #endif
 
 /* Board ID */
-/*
-#define BOARD_LYWSD03MMC_B14		0 // number used for BLE firmware!
-#define BOARD_MHO_C401				1 // SHTC3/SHT4X
-#define BOARD_CGG1					2
-#define BOARD_LYWSD03MMC_B19		3 // number used for BLE firmware!
-//#define BOARD_LYWSD03MMC_DEVBIS	3 // ver https://github.com/devbis/z03mmc
-#define BOARD_LYWSD03MMC_B16		4 // number used for BLE firmware!
-//#define BOARD_WATERMETER			4 // ver https://github.com/slacky1965/watermeter_zed
-#define BOARD_LYWSD03MMC_B20		5 // B2.0 or B1.7 number used for BLE firmware!
-#define BOARD_CGDK2					6 //
-#define BOARD_CGG1N					7 // 2022
-#define BOARD_MHO_C401N				8 // 2022, SHTC3/SHT4X
-//#define BOARD_MJWSD05MMC			9
-#define BOARD_LYWSD03MMC_B15		10 // number used for BLE firmware!
-#define BOARD_LYWSD03MMC			10
-#define BOARD_MHO_C122				11
-//#define BOARD_MJWSD06MMC_EN		12
-#define BOARD_MJWSD06MMC			13
-#define BOARD_LYWSD03MMC_N16		14 // (B1.6 new 2025) number used for BLE firmware!
-// 12..15 - number used for BLE firmware - https://github.com/pvvx/ATC_MiThermometer
-//#define BOARD_TB03F				16 // DIY TB-03F-Kit (not yet published at the moment)
-#define BOARD_TS0201_TZ3000			17 // ZigBee TS0201_TZ3000
-//#define BOARD_TNKS				18 // Water tank controller (not yet published at the moment)
-//#define BOARD_THB2				19 // https://github.com/pvvx/THB2
-//#define BOARD_BTH01				20 // https://github.com/pvvx/THB2
-//#define BOARD_TH05				21 // https://github.com/pvvx/THB2
-#define BOARD_TH03Z   				22 // ZigBee TH03Z
-//#define BOARD_THB1				23 // https://github.com/pvvx/THB2
-//#define BOARD_TH05D				24 // TH05_V1.3 https://github.com/pvvx/THB2
-//#define BOARD_TH05F				25 // TH05Y_V1.2 https://github.com/pvvx/THB2
-//#define BOARD_THB3				26 // https://github.com/pvvx/THB2
-#define BOARD_ZTH01   				27 // ZigBee ZTH01
-#define BOARD_ZTH02   				28 // ZigBee ZTH02
-//#define BOARD_PLM1 				29 // Tuya BLE Plant monitor ECF-SGS01-A rev1.3 (BT3L Tuya module)  (not yet published at the moment)
-#define BOARD_ZTH03   				30 // ZigBee TH03 TS0201(_TZ3000_gohcgzj7, _TZ3000_bguser20) LCD
-#define BOARD_LKTMZL02				31 // ZigBee LKTMZL02 LCD
-//#define BOARD_KEY2 				32 // KEY2(iSearching) https://github.com/pvvx/THB2
-#define BOARD_ZTH05					33 // Tuya ZigBee TS0601_TZE204
-//#define BOARD_TH04				34 // https://github.com/pvvx/THB2
-#define BOARD_CB3S					35 // development is not completed!Tuya ZigBee "Smart Button" TS0041_TZ3000_fa9mlvja
-#define BOARD_HS09					36 // development is not completed! TS0201_TZ3000_1twfmkcc: Tuya ZigBee "Smart Humidity Sensor"
-#define BOARD_ZYZTH02				37 // Tuya ZY-ZTH02 Zigbee, 2 x AAA, SHT30/CHT832x
-#define BOARD_ZYZTH01				38 // Tuya ZY-ZTH02Pro/ZY-ZTH03Pro Zigbee LCD, 2 x AAA, SHT30/CHT832x
-#define BOARD_ZG_227Z				39 // Zigbee ZG-227Z
-#define BOARD_TS0202_PIR1 			40 // Tuya TS0202_TZ3000_6ygjfyll PIR
-#define BOARD_TS0202_PIR2 			41 // Tuya TS0202_TZ3040_bb6xaihh PIR
-//#define BOARD_MINTAGF2			42 // https://github.com/pvvx/THB2
-#define BOARD_ZG303Z				44 // ZG-303Z Plant monitor, 2xAAA, AHT20
-#define BOARD_ZBEACON_TH01			45 // ZBEACON-TH01, 2xAAA , SHT4X
-#define BOARD_ZB_MC					46 // ZigBee-MC, 2xAAA, CHT8305
-*/
-#define BOARD_MZSW01_BL0942			1 // Mini Zigbee Switch, ZTU, BL0942
-#define BOARD_MZSW02_BL0937			2 // Mini Zigbee Switch, ZT2S, BL0937
-#define BOARD_MZSW01_BL0942_MY18B20	3 // Mini Zigbee Switch, ZTU, BL0942 + MY18B20
-#define BOARD_MZSW02_BL0937_MY18B20	4 // Mini Zigbee Switch, ZTU, BL0942 + MY18B20
-
+#define BOARD_EM1SW1		0 // ZTU, BL0942
+#define BOARD_EM1SW2		1 // ZTU, BL0942, ext.switch
+#define BOARD_EM1SW1T		2 // ZTU, BL0942, MY18B20
+#define BOARD_EM1SW2T		3 // ZTU, BL0942, ext.switch, MY18B20
+#define BOARD_EM1SW1TS		6 // ZTU, BL0942, MY18B20, TERMOSTAT
+#define BOARD_EM1SW2TS		7 // ZTU, BL0942, ext.switch, MY18B20, TERMOSTAT
+                    
+#define BOARD_EM8SW1		8 // ZTU, BL0942
+#define BOARD_EM8SW2		9 // ZTU, BL0942, ext.switch
+#define BOARD_EM8SW1T		10 // ZTU, BL0942, MY18B20
+#define BOARD_EM8SW2T		11 // ZTU, BL0942, ext.switch, MY18B20
+#define BOARD_EM8SW1TS		14 // ZTU, BL0942, MY18B20, TERMOSTAT
+#define BOARD_EM8SW2TS		15 // ZTU, BL0942, ext.switch, MY18B20, TERMOSTAT
 
 /* Board define */
 #ifndef BOARD
-#define BOARD					BOARD_MZSW02_BL0937
+#define BOARD				BOARD_EM8SW2TS
+#endif
+
+#if (BOARD & 8)
+#define USE_BL0937			1
+#define USE_BL0942			0
+#else
+#define USE_BL0937			0
+#define USE_BL0942			1
+#endif
+#if (BOARD & 1)
+#define USE_SWITCH			1
+#else
+#define USE_SWITCH			0
+#endif
+#if (BOARD & 2)
+#define USE_SENSOR_MY18B20	1
+#else
+#define USE_SENSOR_MY18B20	0
+#endif
+#if (BOARD & 4)
+#define USE_THERMOSTAT		1
+#else
+#define USE_THERMOSTAT		0
 #endif
 
 /* Chip IDs */
@@ -126,13 +106,10 @@
 		#define CHIP_TYPE		TLSR_B91
 #endif
 
-#if USE_BLE
-#define APP_RELEASE				0x01	//BCD app release "0.0"
-#define APP_BUILD				0x00	//BCD app build "0.4"
-#else
+
 #define APP_RELEASE				0x03	//BCD app release "0.3"
-#define APP_BUILD				0x00	//BCD app build "0.0"
-#endif
+#define APP_BUILD				0x01	//BCD app build "0.0"
+
 #define STACK_RELEASE			0x30	//BCD stack release 3.0
 #define STACK_BUILD				0x01	//BCD stack build 01
 
@@ -140,8 +117,9 @@
  * During OTA upgrade, the upgraded device will check the rules of the following three fields.
  * Refer to ZCL OTA specification for details.
  */
-#define MANUFACTURER_CODE_TELINK           	0x1141	// Telink ID
-#define	IMAGE_TYPE							(0x1000 | (CHIP_TYPE << 8) | BOARD)
+//#define MANUFACTURER_CODE_TELINK           	0x1141	// Telink ID
+#define MANUFACTURER_CODE_TELINK           	0xEA60	// 60000 Telink-pvvx
+#define	IMAGE_TYPE							((USE_BL0937 << 15) | (USE_BL0942 << 12) | (USE_THERMOSTAT << 8) | (USE_SENSOR_MY18B20 << 4)  | USE_SWITCH)
 #define	FILE_VERSION					  	((APP_RELEASE << 24) | (APP_BUILD << 16) | (STACK_RELEASE << 8) | STACK_BUILD)
 
 /* Pre-compiled link configuration. */

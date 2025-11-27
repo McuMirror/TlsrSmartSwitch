@@ -7,6 +7,7 @@
 #define ZCL_SWITCH_TYPE_TOGGLE              0x00
 #define ZCL_SWITCH_TYPE_MOMENTARY           0x01
 #define ZCL_SWITCH_TYPE_MULTIFUNCTION       0x02
+#define ZCL_SWITCH_TYPE_TERMOSTAT			0x03
 
 #define ZCL_SWITCH_ACTION_ON_OFF            0x00
 #define ZCL_SWITCH_ACTION_OFF_ON            0x01
@@ -14,9 +15,6 @@
 
 #define CUSTOM_SWITCH_DECOUPLED_OFF         0x00
 #define CUSTOM_SWITCH_DECOUPLED_ON          0x01
-
-#define CUSTOM_ATTRID_SWITCH_TYPE           0xF000
-#define CUSTOM_ATTRID_DECOUPLED             0xF001
 
 status_t zcl_onoffCfg_register(u8 endpoint, u16 manuCode, u8 attrNum, const zclAttrInfo_t attrTbl[], cluster_forAppCb_t cb);
 nv_sts_t zcl_onOffCfgAttr_save(void);

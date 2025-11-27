@@ -9,23 +9,28 @@
 #define _MY18B20_H_
 
 typedef struct _my18b20_coef_t {
-	u32 temp_k;
-	s16 temp_z;
-	s16 temp_hysteresis; // in 0.1 С
+	uint32_t temp_k;
+	int16_t temp_z; // in 0.01 C
+	int16_t temp_hysteresis; // in 0.1 С
+	int16_t min_temp; // in 0.01 C
+	int16_t max_temp; // in 0.01 C
 } my18b20_coef_t;
+
+extern zcl_thermostatAttr_save_t thr_cfg_saved;
 
 // extern my18b20_coef_t def_coef_my18b20;
 
 typedef struct {
 	my18b20_coef_t coef;
-	s16 rtemp;
-	u32 id;
-	u8	start_measure;
-	u8	stage;
-	u8	type;
-	u8	temp_trg_on;
-	u32 tick;
-	u32 timeout;
+	int16_t rtemp;
+	uint32_t id;
+	uint8_t	start_measure;
+	uint8_t	stage;
+	uint8_t	type;
+	uint8_t	temp_trg_on;
+	uint32_t tick;
+	uint32_t timeout;
+	uint8_t errors; // AC_ERROR_CODE?
 } my18b20_t;
 
 extern my18b20_t my18b20;

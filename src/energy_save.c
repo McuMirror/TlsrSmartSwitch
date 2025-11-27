@@ -3,10 +3,35 @@
  *
  *  Created on: 13 нояб. 2025 г.
  *      Author: pvvx
+ *
+ * Максимальное значение energy за час 25A*250V = 6250Wh
+ * 6250/60 = 104.166666667 W в минуту.
+ * число 10416 - (в единицах 0.01Вт) влезает в uint16_t c запасом в 5 раз.
+ * Если писать 8 байт uint64_t energy + uint32_t crc32,
+ * и далее uint16_t delta + uint16_t chk,
+ * тогда в секторе выйдет (4096-8-4)/4 = 1021 запись + 1 в заголовке сектора.
+ * За 1022/60 = 17.03333 часов заполнится один сектор.
+ * 4 сектора для Flash 512K заполнится за 4*1022/60 = 68.1333 часов,
+ * т.е. за 4*1022/60/24 = 2.83889 суток.
+ * Тогда до исчерпания ресурса записи Flash в 10k для 4-х секторов получим:
+ * 10000*4*1022/60/24 = 28388.889 суток, или 28388.889/365 = 77.777 лет
+ * Для Flash c 1M и буфером записей в 102 сектора ресурс составит:
+ * примерно 77.777*102/4 = 1983.3135 лет
+ * Но типчно SPI-Flash выдерживает более 20 тысяч перезаписей...
  */
+
 #include "app_main.h"
 #include "energy_save.h"
 #include "battery.h"
+#include "utility.h"
+
+energy_store_head_t save_data;
+
+// Store delta
+typedef struct {
+	uint16_t delta;
+	uint16_t chk;
+} energy_store_delta_t;
 
 // Address save energy count to Flash
 typedef struct {
@@ -19,12 +44,8 @@ static energy_cons_t energy_cons; // Address save energy count to Flash
 
 bool new_save_data = false;      // flag
 
-// Save energy count in Flash
-save_data_t save_data;
-
 // Clearing USER_DATA
 static void clear_user_data(void) {
-
     uint32_t flash_addr = energy_cons.flash_addr_start;
     while(flash_addr < energy_cons.flash_addr_end) {
         flash_erase_sector(flash_addr);
@@ -33,27 +54,44 @@ static void clear_user_data(void) {
 }
 
 // Saving the energy meter
+//__attribute__((optimize("-Os")))
 static void save_dataCb(void *args) {
+
+	uint32_t sector_count;
+	energy_store_delta_t energy_delta;
+    energy_store_head_t tst_head;
 
 	battery_detect(0);
 
-    if (save_data.xor_energy != ~save_data.energy) {
-
-        save_data.xor_energy = ~save_data.energy;
-
-        light_blink_start(1, 250, 250);
-
-        if (energy_cons.flash_addr_save == energy_cons.flash_addr_end) {
-            energy_cons.flash_addr_save = energy_cons.flash_addr_start;
-        }
-        if ((energy_cons.flash_addr_save & (FLASH_SECTOR_SIZE-1)) == 0) {
-            flash_erase(energy_cons.flash_addr_save);
-        }
-
-        flash_write(energy_cons.flash_addr_save, sizeof(save_data), (uint8_t*)&save_data);
-
-        energy_cons.flash_addr_save += sizeof(save_data);
-    }
+	energy_delta.delta = g_zcl_seAttrs.cur_sum_delivered - save_data.energy;
+	if(energy_delta.delta > 10) { // > 1 W
+		save_data.energy = g_zcl_seAttrs.cur_sum_delivered;
+	    if (energy_cons.flash_addr_save >= energy_cons.flash_addr_end) {
+	        energy_cons.flash_addr_save = energy_cons.flash_addr_start;
+	    }
+	    if ((energy_cons.flash_addr_save & (FLASH_SECTOR_SIZE-1)) == 0) {
+    		save_data.crc = xcrc32((uint8_t*)&save_data.energy, sizeof(save_data.energy), 0xffffffff);
+    		// запись заголовка сектора с проверкой
+	    	sector_count = (energy_cons.flash_addr_end - energy_cons.flash_addr_start)/FLASH_SECTOR_SIZE;
+    		while(sector_count--) {
+    			flash_erase_sector(energy_cons.flash_addr_save);
+	    		flash_write_page(energy_cons.flash_addr_save, sizeof(save_data), (uint8_t*)&save_data);
+	    	    flash_read_page(energy_cons.flash_addr_save, sizeof(tst_head), (uint8_t*)&tst_head);
+	    		if(memcmp(&save_data, &tst_head, sizeof(save_data)) == 0)
+	    			break;
+    			energy_cons.flash_addr_save += FLASH_SECTOR_SIZE;
+	    	    if (energy_cons.flash_addr_save >= energy_cons.flash_addr_end) {
+	    	        energy_cons.flash_addr_save = energy_cons.flash_addr_start;
+	    	    }
+	    	}
+	    	energy_cons.flash_addr_save += sizeof(save_data);
+	    } else {
+	    	// запись дельты
+	    	energy_delta.chk = ~energy_delta.delta;
+	    	flash_write_page(energy_cons.flash_addr_save, sizeof(energy_delta), (uint8_t*)&energy_delta);
+	    	energy_cons.flash_addr_save += sizeof(energy_delta);
+	    }
+	}
 }
 
 // Initializing USER_DATA storage addresses in Flash memory
@@ -71,71 +109,135 @@ static void init_save_addr_drv(void) {
     }
     energy_cons.flash_addr_save = energy_cons.flash_addr_start;
     save_data.energy = 0;
-    save_data.xor_energy = -1;
     g_zcl_seAttrs.cur_sum_delivered = 0;
 }
 
-
-// Read & check valid blk (Save Energy)
-static int check_saved_blk(uint32_t flash_addr, save_data_t * pdata) {
+// Read & check valid head (Save Energy)
+static int check_saved_head(uint32_t flash_addr, energy_store_head_t * pdata) {
     if(flash_addr >= energy_cons.flash_addr_end)
         flash_addr = energy_cons.flash_addr_start;
-    flash_read_page(flash_addr, sizeof(save_data_t), (uint8_t*)pdata);
-    if(pdata->energy == -1 && pdata->xor_energy == -1) {
+    flash_read_page(flash_addr, sizeof(energy_store_head_t), (uint8_t*)pdata);
+    if(pdata->energy == (uint64_t)0xffffffffffffffff && pdata->crc == 0xffffffff) {
         return -1;
-    } else if(pdata->energy == ~pdata->xor_energy) {
+    } else if(pdata->crc == xcrc32((uint8_t*)pdata, sizeof(uint64_t), 0xffffffff)) {
+        return 0;
+    }
+    return 1;
+}
+
+// Read & check valid delta (Save Energy)
+static int check_saved_delta(uint32_t flash_addr, energy_store_delta_t * pdata) {
+    if(flash_addr >= energy_cons.flash_addr_end)
+        flash_addr = energy_cons.flash_addr_start;
+    flash_read_page(flash_addr, sizeof(energy_store_delta_t), (uint8_t*)pdata);
+    if(pdata->delta == 0xffff && pdata->chk == 0xffff) {
+        return -1;
+    } else if((pdata->delta ^ pdata->chk) == 0xffff) {
         return 0;
     }
     return 1;
 }
 
 // Start initialize (Save Energy)
-int energy_restore(void) {
+//__attribute__((optimize("-Os")))
+void energy_restore(void) {
     int ret;
     uint32_t flash_addr;
 
-    save_data_t tst_data;
+    energy_store_head_t tst_head;
+    energy_store_delta_t tst_delta;
 
     init_save_addr_drv();
 
     flash_addr = energy_cons.flash_addr_start;
 
     while(flash_addr < energy_cons.flash_addr_end) {
-        flash_addr &= ~(FLASH_SECTOR_SIZE-1);
-        ret = check_saved_blk(flash_addr, &tst_data);
+        // начинаем всегда с начала сектора, с заголовка
+    	flash_addr &= ~(FLASH_SECTOR_SIZE-1);
+    	// проверка заголовка сектора и получение начального счетчика
+        ret = check_saved_head(flash_addr, &tst_head);
         if(ret < 0) {
+        	// сектор пустой, cмотрим следующий
             flash_addr += FLASH_SECTOR_SIZE;
             continue;
-        }
-        if(ret == 0) {
-            memcpy(&save_data, &tst_data, sizeof(save_data)); // save_data = tst_data;
-            if((check_saved_blk(flash_addr + FLASH_SECTOR_SIZE, &tst_data) == 0)
-            && tst_data.energy > save_data.energy) {
+        } else if(ret == 0) {
+        	// сектор с верным заголовком, сохраним energy
+        	save_data.energy = tst_head.energy;
+            // проверим следующий сектор (с учетом перехода на начало области сохранений)
+            ret = check_saved_head(flash_addr + FLASH_SECTOR_SIZE, &tst_head);
+            if(ret == 0 && (tst_head.energy >= save_data.energy)) {
+            	// сектор с верным заголовком
+            	// значение energy больше, переходим на следующий сектор.
                 flash_addr += FLASH_SECTOR_SIZE;
                 continue;
             }
+        	// тут: следующий сектор пуст или следующий сектор с битым заголовком
+            // flash_addr = предыдущему сектору с найденным верным заголовком
+            // Будем исследовать дельты ранее найденного сектора
+        } else if(ret > 0) {
+        	// сектор с битым заголовком
+        	// Это говорит о том, что при записи заголовка отключили питание
+        	// и сектор только начат для записи (или во Flash бардак)
+        	// Но, если это первый сектор, тогда возможна потеря данных
+        	// - следует проверить следущий
+        	if(flash_addr == energy_cons.flash_addr_start) {
+                flash_addr += FLASH_SECTOR_SIZE;
+                continue;
+        	} else {
+        		// сектор с битым заголовком, но не первый
+        		flash_erase_sector(flash_addr);
+        		g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
+        		energy_cons.flash_addr_save = flash_addr;
+        		return;
+        	}
         }
-        flash_addr += sizeof(tst_data);
-        while(flash_addr < energy_cons.flash_addr_end) {
-            ret = check_saved_blk(flash_addr, &tst_data);
+        // flash_addr = последний найденный сектор с заголовком
+        flash_addr += sizeof(tst_head);
+        // исследуем и суммируем записи c delta
+        while((flash_addr & (FLASH_SECTOR_SIZE-1)) != 0) {
+        	ret = check_saved_delta(flash_addr, &tst_delta);
             if(ret == 0) {
-                if(tst_data.energy > save_data.energy) {
-                    memcpy(&save_data, &tst_data, sizeof(save_data)); // save_data = tst_data;
-                } else {
-                    flash_addr &= ~(FLASH_SECTOR_SIZE-1);
-                    energy_cons.flash_addr_save = flash_addr;
-                    g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
-                    return 0;
-                }
+            	// chk delta = ok, добавим дельту
+            	save_data.energy += (uint64_t)tst_delta.delta;
             } else if(ret < 0) {
-                energy_cons.flash_addr_save = flash_addr;
-                g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
-                return 0;
+            	// пустой блок, смотрим следующий, т.е. ожидаем 2 пустых:
+            	ret = check_saved_delta(flash_addr + sizeof(tst_delta), &tst_delta);
+            	if(ret < 0) { // тоже пустой -> найден конец записей
+            				  // даже если это конец сектора - этот сектор будет откинут
+            		g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
+            		energy_cons.flash_addr_save = flash_addr;
+            		return;
+            	}
+#if 0	// Избыточно - лучше пропустить все непрописанные/невалидные значения,
+        // если при их записи был срыв питания.
+        // И так меньше объем кода, а для 512K Flash это актуально
+        	} else {
+            	// запись bad, смотрим следующий ?
+        		ret = check_saved_delta(flash_addr + sizeof(tst_delta), &tst_delta);
+            	if(ret > 0) {
+            		// следующая запись снова bad:
+            		// начнем запись со следюущего сектора
+            		flash_addr += FLASH_SECTOR_SIZE-1;
+            		flash_addr &= ~(FLASH_SECTOR_SIZE-1);
+            		g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
+            		energy_cons.flash_addr_save = flash_addr;
+            		return;
+            	}
+            	// следующая запись = ok или пусто, продолжим
+#endif
             }
-            flash_addr += sizeof(tst_data);
+            flash_addr += sizeof(tst_delta);
         }
+        // следующий сектор
+		g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
+        energy_cons.flash_addr_save = flash_addr;
+        return;
     }
-    return 1;
+	// выход while:  нет записей - все сектора пусты:
+	// flash_addr = energy_cons.flash_addr_end
+	g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
+    energy_cons.flash_addr_save = flash_addr;
+    return;
 }
 
 // Clear all USER_DATA (Save Energy)
@@ -153,5 +255,4 @@ int32_t energy_timerCb(void *args) {
     }
     return 0;
 }
-
 

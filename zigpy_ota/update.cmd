@@ -1,5 +1,5 @@
 echo [] > index.json
-for %%a in (../bin/1141-12??-0???3001-*.zigbee) do (
+for %%a in (../bin/*.zigbee) do (
 start /wait node scripts/add.js ../bin/%%a
 )
 copy /Y index.json ..\bin\index%1.json

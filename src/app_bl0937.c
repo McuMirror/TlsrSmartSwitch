@@ -12,7 +12,6 @@ extern u64 mul32x32_64(u32 a, u32 b); // hard function (in div_mod.S)
 static uint16_t tik_max_current; // count max current, step 8 sec, =0xFFFF - flag end
 uint16_t tik_reload, tik_start; // step 1 sec, =0xFFFF - flag end
 
-
 //--------- Data for calculating BL09377 --------
 
 // Pulse counters BL0937
@@ -42,11 +41,14 @@ static old_fract_t old_fract; // Remainder from the previous division
  * ~1415.00W 1054 Hz x8 8432*16.781309297912713472485 = 141499.99999999999999999352 : 1099780
  * ~1400.00W 8360 tick, 16.7464114832535885167464*2pow16 = 1097492.8229665071770334920704 : 1097493
  */
+
 // Sensor Coefficients (for period 8 sec)
+#ifndef BL0937_CURRENT_REF
 #define BL0937_CURRENT_REF        (178060) 		// x1000: 0..65.535A (divisor = 1000 - > A)
 #define BL0937_VOLTAGE_REF        (197732)  	// x100: 0..655.35V (divisor = 100 - > V)
 #define BL0937_POWER_REF          (1081452) 	// x100 0..327.67W, x10: 327.67..3276.7W (divisor = 10, 100 - > W)
 #define BL0937_ENERGY_REF         ((BL0937_POWER_REF + 225)/450) //(=2403) x100 Wh (divisor = 100000 - > kWh)
+#endif
 
 const sensor_pwr_coef_t sensor_pwr_coef_def = {
 	    .current = BL0937_CURRENT_REF,
@@ -65,10 +67,7 @@ static void timer1_gpio_init(GPIO_PinTypeDef pin,GPIO_PolTypeDef pol)
 {
 	unsigned char bit = pin & 0xff;
 
-	gpio_set_func(pin, AS_GPIO);
-	gpio_set_output_en(pin, 0); //disable output
-	gpio_set_input_en(pin, 1);//enable input
-	gpio_setup_up_down_resistor(pin, PM_PIN_PULLUP_1M);
+	gpio_input_init(pin, PM_PIN_PULLUP_1M);
 
 	BM_SET(reg_gpio_irq_risc1_en(pin), bit);
 
@@ -94,10 +93,7 @@ static void timer2_gpio_init(GPIO_PinTypeDef pin,GPIO_PolTypeDef pol)
 {
 	unsigned char bit = pin & 0xff;
 
-	gpio_set_func(pin, AS_GPIO);
-	gpio_set_output_en(pin, 0); //disable output
-	gpio_set_input_en(pin, 1);//enable input
-	gpio_setup_up_down_resistor(pin, PM_PIN_PULLUP_1M);
+	gpio_input_init(pin, PM_PIN_PULLUP_1M);
 
 	BM_SET(reg_gpio_irq_risc2_en(pin), bit);
 
@@ -127,10 +123,18 @@ void app_sensor_init(void) {
 	    tik_start = 0xffff;
 	if(!config_min_max.time_reload)
 		tik_reload = 0xffff;
-	//bl0937_cnt.cnt_sel = 0;
-	gpio_write(GPIO_SEL, 0);
-	timer1_gpio_init(GPIO_CF, POL_RISING);
-	timer2_gpio_init(GPIO_CF1, POL_RISING);
+	if(!dev_gpios.sel) {
+		dev_gpios.sel = GPIO_SEL;
+	}
+	gpio_output_init(dev_gpios.sel, 0);
+	if(!dev_gpios.cf) {
+		dev_gpios.cf = GPIO_CF;
+	}
+	timer1_gpio_init(dev_gpios.cf, POL_RISING);
+	if(!dev_gpios.cf1) {
+		dev_gpios.cf1 = GPIO_CF1;
+	}
+	timer2_gpio_init(dev_gpios.cf1, POL_RISING);
 	TL_ZB_TIMER_SCHEDULE(app_monitoringCb, NULL, TIMEOUT_1SEC);
     TL_ZB_TIMER_SCHEDULE(energy_timerCb, NULL, TIMEOUT_1MIN);
 }
@@ -138,6 +142,7 @@ void app_sensor_init(void) {
 //--------- Monitoring --------
 
 // Calculation of variables
+//__attribute__((optimize("-Os")))
 void bl0937_new_dataCb(void *args) {
 
 	uint32_t  current, voltage, power, energy;
@@ -197,53 +202,59 @@ void bl0937_new_dataCb(void *args) {
    		energy = tmp >> 16;
    	}
 
-   	if(energy) {
-		save_data.energy += energy;
-		g_zcl_seAttrs.cur_sum_delivered = save_data.energy;
-        new_save_data = true; // energy_save();
-	}
+  	if(energy) {
+   		g_zcl_seAttrs.cur_sum_delivered += energy;
+   		new_save_data = true; // energy_save();
+   	}
 
 	//TODO: Calculate Power factor = ?
 
-    if((config_min_max.min_voltage && voltage < config_min_max.min_voltage)
-    	|| (config_min_max.max_voltage && voltage > config_min_max.max_voltage)) {
+    if(config_min_max.min_voltage && voltage < config_min_max.min_voltage) {
     	tik_reload = 0;
-		if(tik_start != 0xffff)
-			tik_start = 0;
-    	if(relay_settings.status_onoff[0])
-    		//cmdOnOff_off(dev_relay.unit_relay[0].ep);
-    		set_relay_status(0, 0);
-    	return;
-    }
-    if(config_min_max.max_current
+		if(tik_start != 0xffff) { // startup timeout expired?
+			tik_start = 0; // continue from the beginning startup timeout
+		}
+   		if (config_min_max.emergency_off & BIT(BIT_MIN_VOLTAGE_OFF)) {
+			relay_off |= BIT(BIT_MIN_VOLTAGE_OFF);
+   		}
+    } else if(config_min_max.max_voltage && voltage > config_min_max.max_voltage) {
+    	tik_reload = 0; // continue the reload timeout count from the beginning, relay Off
+		if(tik_start != 0xffff) { // startup timeout expired?
+			tik_start = 0; // continue from the beginning startup timeout, relay Off
+		}
+   		if (config_min_max.emergency_off & BIT(BIT_MAX_VOLTAGE_OFF)) {
+			relay_off |= BIT(BIT_MAX_VOLTAGE_OFF);
+   		}
+    } else if(config_min_max.max_current
       && config_min_max.time_max_current
       && (current > config_min_max.max_current)) {
-		tik_reload = 0;
-		if(tik_start != 0xffff)
-			tik_start = 0;
-		if(relay_settings.status_onoff[0]) {
-			if(tik_max_current == 0xffff)
-				return;
+		if(tik_max_current != 0xffff) { // Over Current timeout expired?
 			tik_max_current += 8;
-        	if(tik_max_current >= config_min_max.time_max_current) {
-        		tik_max_current = 0xffff;
-        		//cmdOnOff_off(dev_relay.unit_relay[0].ep);
-        		set_relay_status(0, 0);
-            	return;
-        	}
+			if(tik_max_current >= config_min_max.time_max_current) {
+				tik_reload = 0; // continue the reload timeout count from the beginning, relay Off
+				tik_max_current = 0xffff; // Over Current timeout expired
+				if (config_min_max.emergency_off & BIT(BIT_MAX_CURRENT_OFF))
+					relay_off |= BIT(BIT_MAX_CURRENT_OFF);
+			}
+		} else { // Over Current timeout expired
+			tik_reload = 0; // continue the reload timeout count from the beginning, relay Off
 		}
-    } else {
+    } else { // all ok
     	tik_max_current = 0;
-    }
-    if(config_min_max.time_start && tik_start >= config_min_max.time_start)
-    	tik_start = 0xffff;
-    if(config_min_max.time_reload && tik_reload >= config_min_max.time_reload) {
-    	tik_reload = 0xffff;
-    	if(relay_settings.status_onoff[0]) {
-    		// cmdOnOff_on(dev_relay.unit_relay[0].ep);
-    		set_relay_status(0, 1);
+    	if(tik_start >= config_min_max.time_start) {
+    		tik_start = 0xffff;
     	}
+    	if(tik_reload >= config_min_max.time_reload) {
+    		tik_reload = 0xffff;
+    	}
+#if USE_THERMOSTAT // USE_SENSOR_MY18B20
+		set_therm_relay_status(cfg_on_off.onOff);
+#else
+   		set_relay_status(cfg_on_off.onOff);
+#endif
+    	return;
     }
+	set_relay_status(0); // Relay Off
 }
 
 // Step 1 sec
@@ -260,10 +271,10 @@ int32_t app_monitoringCb(void *arg) {
 	reg = reg_tmr2_tick; // get count
 
 	if(bl0937_cnt.cnt_sel & 1) {
-		gpio_write(GPIO_SEL, 1);
+		gpio_write(dev_gpios.sel, 1);
 		bl0937_cnt.cnt_current += reg; // add count current
 	} else {
-		gpio_write(GPIO_SEL, 0);
+		gpio_write(dev_gpios.sel, 0);
 		bl0937_cnt.cnt_voltage += reg; // add count voltage
 	}
 
@@ -322,8 +333,5 @@ nv_sts_t save_config_sensor(void) {
     return NV_ENABLE_PROTECT_ERROR;
 #endif
 }
-
-
-
 
 #endif // USE_BL0937

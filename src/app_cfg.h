@@ -1,8 +1,8 @@
-/********************************************************************************************************
+/**********************************************************************
  * @file    app_cfg.h
  *
  * @brief   This is the header file for app_cfg
- *******************************************************************************************************/
+ *********************************************************************/
 #ifndef _APP_CFG_H_
 #define _APP_CFG_H_
 
@@ -16,14 +16,6 @@ extern "C" {
 #define MCU_CORE_8258       1
 #define ZB_ROUTER_ROLE      1
 
-
-#define ON                      1
-#define OFF                     0
-
-/* for reporting */
-#define REPORTING_MIN       60              /* 1 min            */
-#define REPORTING_MAX       300             /* 5 min            */
-
 /**********************************************************************
  * Version configuration
  */
@@ -33,6 +25,8 @@ extern "C" {
 /**********************************************************************
  * Product Information
  */
+
+#define ZB_TX_POWER_IDX_DEF RF_POWER_INDEX_P10p46dBm
 
 /* Debug mode config */
 #define UART_PRINTF_MODE                OFF//ON
@@ -57,8 +51,7 @@ extern "C" {
 
 #define CLOCK_SYS_CLOCK_HZ          48000000 // 32000000    // 24000000 //48000000
 
-/********************** For 1M Flash only (bootloader mode) *********************************/
-/* Flash 1M map:
+/* FLASH 1M map:
               1M
 0x100000  ------------
          |  MAC_Addr  |
@@ -118,75 +111,183 @@ extern "C" {
     #define BEGIN_USER_DATA_F512K             0x72000 // begin address for saving energy
     #define END_USER_DATA_F512K               0x76000 // end address for saving energy
 
-/**********************************************************************
- * I2C driver type
- */
-#define I2C_DRV_NONE    0
-#define I2C_DRV_HARD    1
-#define I2C_DRV_SOFT    2
-
-/**********************************************************************
- * Product services
- * Supported services by the device (bits)
- */
-#define SERVICE_OTA         0x00000001  // OTA all enable!
-#define SERVICE_OTA_EXT     0x00000002  // Compatible BigOTA/ZigbeeOTA
-#define SERVICE_PINCODE     0x00000004  // support pin-code
-#define SERVICE_BINDKEY     0x00000008  // support encryption beacon (bindkey)
-#define SERVICE_HISTORY     0x00000010  // flash logger enable
-#define SERVICE_SCREEN      0x00000020  // screen
-#define SERVICE_LE_LR       0x00000040  // support extension advertise + LE Long Range
-#define SERVICE_THS         0x00000080  // T & H sensor
-#define SERVICE_RDS         0x00000100  // wake up when the reed switch + pulse counter
-#define SERVICE_KEY         0x00000200  // key "connect"
-#define SERVICE_OUTS        0x00000400  // GPIO output
-#define SERVICE_INS         0x00000800  // GPIO input
-#define SERVICE_TIME_ADJUST 0x00001000  // time correction enabled
-#define SERVICE_HARD_CLOCK  0x00002000  // RTC enabled
-#define SERVICE_TH_TRG      0x00004000  // use TH trigger out
-#define SERVICE_LED         0x00008000  // use led
-#define SERVICE_MI_KEYS     0x00010000  // use mi keys
-#define SERVICE_PRESSURE    0x00020000  // pressure sensor
-#define SERVICE_18B20       0x00040000  // use sensor(s) MY18B20
-#define SERVICE_IUS         0x00080000  // use I and U sensor (INA226)
-#define SERVICE_PLM         0x00100000  // use PWM-RH and NTC
-#define SERVICE_BUTTON      0x00200000  // брелок-кнопка
-#define SERVICE_FINDMY      0x00400000  // FindMy
-#define SERVICE_SCANTIM     0x00800000  // Scan Time (develop, test only!)
-#define SERVICE_ZIGBEE      0x01000000  // ZB-version
-#define SERVICE_PIR         0x02000000  // use PIR sensor
-#define SERVICE_EXTENDED    0x80000000  //
-
-
-/**********************************************************************
- *  Battery type
- */
-#define BATTERY_CR2032      0
-#define BATTERY_CR2430      1
-#define BATTERY_CR2450      2
-#define BATTERY_2AAA        3
-#define BATTERY_DC_DC       4
-
-/* Board include */
-#if defined(BOARD)
-#if BOARD == BOARD_MZSW01_BL0942
-#include "boards/mzsw01_ztu_bl0942.h"
-#elif BOARD == BOARD_MZSW02_BL0937
-#include "boards/mzsw02_zt2s_bl0937.h"
-#elif BOARD == BOARD_MZSW01_BL0942_MY18B20
-#include "boards/mzsw01_ztu_bl0942_my18b20.h"
-#elif BOARD == BOARD_MZSW02_BL0937_MY18B20
-#include "boards/mzsw02_zt2s_bl0937_my18b20.h"
-#else
-#error "Define BOARD!"
-#endif
-#else
+#ifndef BOARD // in "version_cfg.h"
 #error "Define BOARD!"
 #endif
 
-#ifndef USE_TRIGGER
-#define USE_TRIGGER             0 // develop
+#define ZCL_BASIC_MFG_NAME     {11,'T','e','l','i','n','k','-','p','v','v','x'}
+
+#if USE_BL0937
+#define _MODEL_EM	'8'
+#else
+ #if USE_BL0942
+	#define _MODEL_EM	'1'
+ #else
+	#error "Config error!"
+ #endif
 #endif
+
+#if USE_SWITCH
+#define _MODEL_SW	'2'
+#else
+#define _MODEL_SW	'1'
+#endif
+
+#if USE_SENSOR_MY18B20
+ #if USE_THERMOSTAT
+	#define ZCL_BASIC_MODEL_ID     {10,'E','M',_MODEL_EM,'S','W',_MODEL_SW,'T','S','_','z'}
+ #else
+	#define ZCL_BASIC_MODEL_ID     {9,'E','M',_MODEL_EM,'S','W',_MODEL_SW,'T','_','z'}
+ #endif
+#else
+#define ZCL_BASIC_MODEL_ID     {8,'E','M',_MODEL_EM,'S','W',_MODEL_SW,'_','z'}
+#endif
+
+/*** Configure GPIOS for my device ***/
+
+#ifdef MY_DEVICE
+
+#if USE_BL0937
+
+#define BUTTON_ON		0
+#define GPIO_BUTTON     GPIO_PD7
+
+#define LED_ON          0
+#define GPIO_LED1       GPIO_PB1
+#define GPIO_LED2       GPIO_PB2
+
+#define RELAY_ON        1
+#define GPIO_RELAY1     GPIO_PD2
+
+#define GPIO_SWITCH_ON  0
+#define GPIO_SWITCH1    GPIO_PA1
+
+#define GPIO_ONEWIRE1   GPIO_PA1
+
+#define GPIO_CF         GPIO_PB4
+#define GPIO_CF1        GPIO_PB5
+#define GPIO_SEL        GPIO_PD3
+
+#define BL0937_CURRENT_REF        (191547) 		// x1000: 0..65.535A (divisor = 1000 - > A)
+#define BL0937_VOLTAGE_REF        (208773)  	// x100: 0..655.35V (divisor = 100 - > V)
+#define BL0937_POWER_REF          (1161624) 	// x100 0..327.67W, x10: 327.67..3276.7W (divisor = 10, 100 - > W)
+#define BL0937_ENERGY_REF         ((BL0937_POWER_REF + 225)/450) //(=2403) x100 Wh (divisor = 100000 - > kWh)
+
+#endif // USE_BL0937
+
+#if	USE_BL0942
+
+#define BUTTON_ON		0
+#define GPIO_BUTTON     GPIO_PB5
+
+#define LED_ON          0
+#define GPIO_LED1       GPIO_PB4
+#define GPIO_LED2       0
+
+#define RELAY_ON        1
+#define GPIO_RELAY1     GPIO_PC3
+
+#define GPIO_SWITCH_ON 	0
+#define GPIO_SWITCH1    GPIO_PD2
+
+#define GPIO_ONEWIRE1   GPIO_PD2
+
+#define GPIO_UART_TX    UART_TX_PB1
+#define GPIO_UART_RX    UART_RX_PB7
+
+#define BL0942_CURRENT_REF      16860520 // 2pow32/251.21346469622 // x1000: 0..65.535A
+#define BL0942_VOLTAGE_REF      26927694 // 2pow32/159.5 // x100: 0..655.35V
+// POWER_REF = (2pow32/VOLTAGE_REF)*(2pow32/CURRENT_REF)*353700/305978/73989 = 0.63478593422
+#define BL0942_POWER_REF        27060025 // 2pow24/0.620  // x1000: x1000: 0..327.67W, x100 32.767..327.67W, x10: 327.67..3276.7W
+// ENERGY_REF = ((2pow24/POWER_REF)*36000)/419430.4 = 0.053215
+#define BL0942_ENERGY_REF       315272310 // 2pow24/0.053215 // x100000
+#define BL0942_FREQ_REF         100000000 // (measured: 100175000) x100
+
+#endif // USE_BL0942
+
+#else // MY_DEVICE
+
+/*** Configure GPIOS for device BL0937 ***/
+
+#if	USE_BL0937
+
+#define BUTTON_ON		0
+#define GPIO_BUTTON     GPIO_PD7
+
+#define LED_ON          0
+#define GPIO_LED1       GPIO_PB1
+#define GPIO_LED2       0
+
+#define RELAY_ON        1
+#define GPIO_RELAY1     GPIO_PD2
+
+#define GPIO_SWITCH_ON  0
+#define GPIO_SWITCH1    GPIO_PA1
+
+#define GPIO_ONEWIRE1   GPIO_PA1
+
+#define GPIO_CF         GPIO_PB4
+#define GPIO_CF1        GPIO_PB5
+#define GPIO_SEL        GPIO_PD3
+
+#endif
+
+/*** Configure GPIOS for device BL0942 ***/
+
+#if	USE_BL0942
+
+#define BUTTON_ON		0
+#define GPIO_BUTTON     GPIO_PB5
+
+#define LED_ON          0
+#define GPIO_LED1       GPIO_PB4
+#define GPIO_LED2       0
+
+#define RELAY_ON        1
+#define GPIO_RELAY1     GPIO_PC3
+
+#define GPIO_SWITCH_ON 	0
+#define GPIO_SWITCH1    GPIO_PD2
+
+#define GPIO_ONEWIRE1   GPIO_PD2
+
+#define GPIO_UART_TX    UART_TX_PB1
+#define GPIO_UART_RX    UART_RX_PB7
+
+#endif
+
+#endif // MY_DEVICE
+
+#define KB_LINE_HIGH_VALID BUTTON_ON
+#define BUTTON_OFF 		(!BUTTON_ON)
+#define LED_OFF         (!LED_ON)
+#define RELAY_OFF   	(!RELAY_ON)
+#define GPIO_SWITCH_OFF	(!GPIO_SWITCH_ON)
+
+
+/*** Configure printf UART ***/
+
+#if UART_PRINTF_MODE
+#define DEBUG_INFO_TX_PIN       UART_TX_PD3    //printf
+#define DEBUG_BAUDRATE          115200
+
+#endif /* UART_PRINTF_MODE */
+
+/*** Configure button ***/
+
+enum {
+    VK_SW1 = 0x01,
+};
+
+#define MAX_BUTTON_NUM  1
+
+#define KB_MAP_NORMAL   {{VK_SW1,}}
+
+#define KB_MAP_NUM      KB_MAP_NORMAL
+#define KB_MAP_FN       KB_MAP_NORMAL
+
+#define KB_DRIVE_PINS  {NULL}
+#define KB_SCAN_PINS   {GPIO_BUTTON}
 
 /**********************************************************************
  * Battery & RF Power
@@ -195,53 +296,20 @@ extern "C" {
 #define USE_BATTERY     BATTERY_DC_DC
 #endif
 
-#if USE_BATTERY == BATTERY_CR2032
+/*** Configure  GPIO Vbat ***/
 
-#define ZB_TX_POWER_IDX_DEF             RF_POWER_INDEX_P1p99dBm // TX 8 mA
-#define BLE_TX_POWER_DEF                RF_POWER_P1p99dBm       // TX 8 mA
+#define USE_BATTERY			BATTERY_DC_DC
 
-#elif USE_BATTERY == BATTERY_CR2430
-
-#define ZB_TX_POWER_IDX_DEF             RF_POWER_INDEX_P2p39dBm
-#define BLE_TX_POWER_DEF                RF_POWER_P2p39dBm
-
-#elif USE_BATTERY == BATTERY_CR2450
-
-#define ZB_TX_POWER_IDX_DEF             RF_POWER_INDEX_P2p61dBm
-#define BLE_TX_POWER_DEF                RF_POWER_P2p61dBm
-
-#elif USE_BATTERY == BATTERY_2AAA
-
-#define ZB_TX_POWER_IDX_DEF             RF_POWER_INDEX_P3p01dBm
-#define BLE_TX_POWER_DEF                RF_POWER_P3p01dBm
-
-#elif USE_BATTERY == BATTERY_DC_DC
-
-#define ZB_TX_POWER_IDX_DEF             RF_POWER_INDEX_P10p46dBm
-#define BLE_TX_POWER_DEF                RF_POWER_P3p01dBm
-
-#endif
-
-#if USE_BLE
-#define ZB_DEFAULT_TX_POWER_IDX     BLE_TX_POWER_DEF
-#define BLE_DEFAULT_TX_POWER        BLE_TX_POWER_DEF
-#else
-#define ZB_DEFAULT_TX_POWER_IDX     ZB_TX_POWER_IDX_DEF
-#define BLE_DEFAULT_TX_POWER        ZB_TX_POWER_IDX_DEF
-#endif
+#define SHL_ADC_VBAT        1  // "B0P" in adc.h
+#define GPIO_VBAT           GPIO_PB0 // missing pin on case TLSR8251F512ET24
+#define PB0_INPUT_ENABLE    1
+#define PB0_DATA_OUT        1
+#define PB0_OUTPUT_ENABLE   1
+#define PB0_FUNC            AS_GPIO
 
 /* Voltage detect module */
 #define VOLTAGE_DETECT_ENABLE       0 // always = 0!
 #define VOLTAGE_DETECT_ADC_PIN      GPIO_VBAT
-
-/**********************************************************************
- * Sensor configuration
- */
-#ifndef USE_SENSOR_TH
-#define USE_SENSOR_TH  (USE_SENSOR_CHT8305 || USE_SENSOR_CHT8215 || USE_SENSOR_AHT20_30 || USE_SENSOR_SHT4X || USE_SENSOR_SHTC3 || USE_SENSOR_SHT30)
-#endif
-
-#define DEF_OCCUPANCY_DELAY     60 // sec
 
 /**********************************************************************
  * NVM configuration
@@ -263,37 +331,12 @@ typedef enum{
 	NV_ITEM_APP_CFG_SENSOR_BL09xx,
 	NV_ITEM_APP_CFG_SENSOR_MY18B20,
 	NV_ITEM_APP_CFG_THERMOSTAT,
+	NV_ITEM_APP_CFG_ON_OFF,
 } nv_item_app_t;
 
 /**********************************************************************
  * ZCL cluster support setting
  */
-#if 0
-#define ZCL_ON_OFF_SUPPORT              USE_TRIGGER
-#define ZCL_LEVEL_CTRL_SUPPORT          0 // =0 (!)
-#define ZCL_LIGHT_COLOR_CONTROL_SUPPORT 0 // =0 (!)
-#define ZCL_POWER_CFG_SUPPORT                       1
-//#define ZCL_IAS_ZONE_SUPPORT                      1
-#if (DEV_SERVICES & SERVICE_THS)
-#define ZCL_TEMPERATURE_MEASUREMENT_SUPPORT         1
-#define ZCL_RELATIVE_HUMIDITY_SUPPORT               1
-#define ZCL_THERMOSTAT_UI_CFG_SUPPORT               1
-#endif
-#if (DEV_SERVICES & SERVICE_PIR)
-#define ZCL_OCCUPANCY_SENSING_SUPPORT               1
-#endif
-#define ZCL_POLL_CTRL_SUPPORT                       1
-#define ZCL_GROUP_SUPPORT                           USE_TRIGGER
-#define ZCL_OTA_SUPPORT                             1
-#define TOUCHLINK_SUPPORT                           0
-#define FIND_AND_BIND_SUPPORT                       0
-#if TOUCHLINK_SUPPORT
-#define ZCL_ZLL_COMMISSIONING_SUPPORT               1
-#endif
-#define REJOIN_FAILURE_TIMER                        1
-#define USE_CHG_NAME                                1
-
-#else
 
 /* BDB */
 #define TOUCHLINK_SUPPORT               ON
@@ -313,35 +356,27 @@ typedef enum{
 #define ZCL_METERING_SUPPORT                        ON
 #define ZCL_ELECTRICAL_MEASUREMENT_SUPPORT          ON
 #define ZCL_MULTISTATE_INPUT_SUPPORT                USE_SWITCH
-#define ZCL_THERMOSTAT_SUPPORT						USE_SENSOR_MY18B20
-//#define ZCL_TEMPERATURE_MEASUREMENT_SUPPORT			USE_SENSOR_MY18B20
+#define ZCL_THERMOSTAT_SUPPORT						USE_THERMOSTAT
+#define ZCL_TEMPERATURE_MEASUREMENT_SUPPORT			USE_SENSOR_MY18B20
 
 // TODO: ZCL_ALARMS_SUPPORT
-
-#endif
 
 #if TOUCHLINK_SUPPORT
 #define ZCL_ZLL_COMMISSIONING_SUPPORT               ON
 #endif
 
 /**********************************************************************
- * BLE configuration
- */
-#define APP_SECURITY_ENABLE                 0
-#define APP_DIRECT_ADV_ENABLE               1
-#define BLE_APP_PM_ENABLE                   PM_ENABLE
-#define PM_DEEPSLEEP_RETENTION_ENABLE       PM_ENABLE
-
-#define USE_DEVICE_INFO_CHR_UUID            1
-#define USE_FLASH_SERIAL_UID                1
-#define USE_BLE_OTA                         ZCL_OTA_SUPPORT
-
-/**********************************************************************
  * Modules configuration
  */
 
-/* Configure startup */
-#define STARTUP_IN_BLE              1   // always =1 (if BLE)!
+#define ZB_DEFAULT_TX_POWER_IDX ZB_TX_POWER_IDX_DEF
+
+#define ON                  1
+#define OFF                 0
+
+/* for reporting */
+#define REPORTING_MIN       60              /* 1 min            */
+#define REPORTING_MAX       300             /* 5 min            */
 
 /* Watch dog module */
 #define MODULE_WATCHDOG_ENABLE                      0

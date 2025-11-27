@@ -14,11 +14,8 @@ static void buttonKeepPressed(u8 btNum) {
     g_appCtx.button[btNum-1].ctn = 0;
 
     if(btNum == VK_SW1) {
-#if UART_PRINTF_MODE && DEBUG_BUTTON
-        printf("The button was keep pressed for 5 seconds\r\n");
-#endif
 
-        zb_factoryReset();
+    	zb_factoryReset();
 
         g_appCtx.net_steer_start = true;
         TL_ZB_TIMER_SCHEDULE(net_steer_start_offCb, NULL, TIMEOUT_1MIN30SEC);
@@ -31,29 +28,14 @@ static void buttonSinglePressed(u8 btNum) {
 
     switch (btNum) {
         case VK_SW1:
-#if UART_PRINTF_MODE && DEBUG_BUTTON
-            printf("Button push 1 time\r\n");
-#endif
-            cmdOnOff_toggle(APP_ENDPOINT1);
-            if(zb_isDeviceJoinedNwk()) {
-            }
+        	if (!cfg_on_off.key_lock)
+        		cmdOnOff_toggle();
             break;
         default:
             break;
     }
 }
 
-//static void buttonDoublePressed(u8 btNum) {
-//    printf("Command double click\r\n");
-//}
-//
-//static void buttonTriplePressed(u8 btNum) {
-//    printf("Command triple click\r\n");
-//}
-//
-//static void buttonQuadruplePressed(u8 btNum) {
-//    printf("Command quadruple click\r\n");
-//}
 
 
 static void buttonCheckCommand(uint8_t btNum) {
@@ -61,12 +43,6 @@ static void buttonCheckCommand(uint8_t btNum) {
 
     if (g_appCtx.button[btNum-1].ctn == 1) {
         buttonSinglePressed(btNum);
-//    } else if (g_appCtx.button[btNum-1].ctn == 2) {
-//        buttonDoublePressed(btNum);
-//    } else if (g_appCtx.button[btNum-1].ctn == 3) {
-//        buttonTriplePressed(btNum);
-//    } else if (g_appCtx.button[btNum-1].ctn == 4) {
-//        buttonQuadruplePressed(btNum);
     }
 
     g_appCtx.button[btNum-1].ctn = 0;
@@ -82,8 +58,8 @@ void keyScan_keyPressedCB(kb_data_t *kbEvt) {
         g_appCtx.button[keyCode-1].state = APP_FACTORY_NEW_SET_CHECK;
         g_appCtx.button[keyCode-1].ctn++;
         light_blink_start(1, 30, 1);
-        if (zb_isDeviceJoinedNwk()) {
-        }
+//        if (zb_isDeviceJoinedNwk()) {
+//        }
     }
 }
 
@@ -92,8 +68,6 @@ void keyScan_keyReleasedCB(u8 keyCode){
     if (keyCode != 0xff) {
         g_appCtx.button[keyCode-1].released_time = clock_time();
         g_appCtx.button[keyCode-1].state = APP_STATE_RELEASE;
-
-//        g_appCtx.button[keyCode-1].state = APP_STATE_NORMAL;
     }
 }
 
@@ -130,7 +104,7 @@ void button_handler(void) {
     }
 }
 
-u8 button_idle() {
+u8 button_idle(void) {
 
     if (g_appCtx.keyPressed) {
         return true;

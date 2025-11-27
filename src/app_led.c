@@ -1,50 +1,77 @@
 
 #include "app_main.h"
 
-void led_on(uint32_t pin)
+void led_on(void)
 {
-    drv_gpio_write(pin, LED_ON);
+	gpio_write(dev_gpios.led1, LED_ON);
 }
 
-void led_off(uint32_t pin)
+void led_off(void)
 {
-    drv_gpio_write(pin, LED_OFF);
+	gpio_write(dev_gpios.led1, LED_OFF);
+}
+
+bool get_led(void) {
+	return gpio_read(dev_gpios.led1) ?
+#if LED_ON
+	LED_ON : LED_OFF;
+#else
+	LED_OFF : LED_ON;
+#endif
+}
+
+void led_set_control(void) {
+
+    switch(cfg_on_off.led_control) {
+        case CONTROL_LED_OFF:
+            led_off();
+            break;
+        case CONTROL_LED_ON:
+            led_on();
+            break;
+        case CONTROL_LED_ON_OFF:
+            if (get_relay_status())
+            	led_on();
+            else
+            	led_off();
+            break;
+        default:
+            break;
+    }
 }
 
 void light_on(void)
 {
-    led_on(LED_GPIO);
+    if(!g_appCtx.timerLedEvt && cfg_on_off.led_control != CONTROL_LED_OFF)
+    	led_on();
 }
 
 void light_off(void)
 {
-    led_off(LED_GPIO);
+    if(!g_appCtx.timerLedEvt && cfg_on_off.led_control != CONTROL_LED_ON)
+    	led_off();
 }
 
-void light_init(void)
-{
-    led_off(LED_GPIO);
-
-}
 
 int32_t zclLightTimerCb(void *arg)
 {
-    uint32_t interval = 0;
+    int32_t interval = 0;
 
-    if(g_appCtx.sta == g_appCtx.oriSta){
+    if(g_appCtx.sta == g_appCtx.oriSta) {
         g_appCtx.times--;
         if(g_appCtx.times <= 0){
             g_appCtx.timerLedEvt = NULL;
+            led_set_control();
             return -1;
         }
     }
-
-    g_appCtx.sta = !g_appCtx.sta;
     if(g_appCtx.sta){
-        light_on();
+    	g_appCtx.sta = 0;
+        led_on();
         interval = g_appCtx.ledOnTime;
-    }else{
-        light_off();
+    } else {
+    	g_appCtx.sta = 1;
+		led_off();
         interval = g_appCtx.ledOffTime;
     }
 
@@ -56,14 +83,15 @@ void light_blink_start(uint8_t times, uint16_t ledOnTime, uint16_t ledOffTime)
     uint32_t interval = 0;
     g_appCtx.times = times;
 
-    if(!g_appCtx.timerLedEvt){
-        if(g_appCtx.oriSta){
-            light_off();
+    if(!g_appCtx.timerLedEvt) {
+    	g_appCtx.oriSta = get_led();
+    	if(g_appCtx.oriSta) { // LED_ON
             g_appCtx.sta = 0;
+    		led_off();
             interval = ledOffTime;
-        }else{
-            light_on();
+        } else {
             g_appCtx.sta = 1;
+        	led_on();
             interval = ledOnTime;
         }
         g_appCtx.ledOnTime = ledOnTime;
@@ -77,12 +105,7 @@ void light_blink_stop(void)
 {
     if(g_appCtx.timerLedEvt){
         TL_ZB_TIMER_CANCEL(&g_appCtx.timerLedEvt);
-
         g_appCtx.times = 0;
-        if(g_appCtx.oriSta){
-            light_on();
-        }else{
-            light_off();
-        }
+        led_set_control();
     }
 }

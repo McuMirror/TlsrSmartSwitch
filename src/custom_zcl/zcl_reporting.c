@@ -1,4 +1,4 @@
-/********************************************************************************************************
+/*************************************************************************************
  * @file    zcl_reporting.c
  *
  * @brief   This is the source file for zcl_reporting
@@ -21,7 +21,7 @@
  *          See the License for the specific language governing permissions and
  *          limitations under the License.
  *
- *******************************************************************************************************/
+ ************************************************************************************/
 
 /**********************************************************************
  * INCLUDES
@@ -501,7 +501,7 @@ _CODE_ZCL_ void reportAttrs(void) {
         }
 
         if (clusterID != 0xFFFF) {
-            uint8_t i = endpoint - 1;
+//            uint8_t i = endpoint - 1;
             epInfo_t dstEpInfo;
             TL_SETSTRUCTCONTENT(dstEpInfo, 0);
 
@@ -509,9 +509,9 @@ _CODE_ZCL_ void reportAttrs(void) {
             dstEpInfo.profileId = profileID;
 
             if (report.attr[0].attrID == ZCL_MULTISTATE_INPUT_ATTRID_PRESENT_VALUE &&
-                    !clock_time_exceed(last_timeReportMsi[i], TIMEOUT_TICK_250MS)) {
+                    !clock_time_exceed(last_timeReportMsi, TIMEOUT_TICK_250MS)) {
 
-                zcl_reportAttrs(endpoint, &dstEpInfo, TRUE, ZCL_FRAME_SERVER_CLIENT_DIR, last_seqNum[i],
+                zcl_reportAttrs(endpoint, &dstEpInfo, TRUE, ZCL_FRAME_SERVER_CLIENT_DIR, last_seqNum,
                         MANUFACTURER_CODE_NONE, clusterID, (zclReportCmd_t* )&report);
 
 //                printf("zcl_report. msi 0x%04x repeat. seqNum: %d\r\n", clusterID, last_seqNum[i]);

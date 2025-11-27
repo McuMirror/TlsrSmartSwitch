@@ -107,6 +107,8 @@ $(OUT_PATH)/zigbee/ss/ss_nv.o \
 $(OUT_PATH)/zigbee/ota/ota.o \
 $(OUT_PATH)/zigbee/ota/otaEpCfg.o
 
+#$(OUT_PATH)/zigbee/common/zb_version.o -> gpio.c
+
 # Each subdirectory must supply rules for building sources it contributes
 $(OUT_PATH)/zigbee/%.o: $(SDK_PATH)/zigbee/%.c
 	@echo 'Building file: $<'

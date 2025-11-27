@@ -214,7 +214,7 @@ $(BIN_FILE): $(ELF_FILE)
 $(OTA_FILE): $(BIN_FILE)
 	@echo 'Create OTA image'
 	@echo ' '
-	@$(PYTHON) $(MAKE_PATH)/zigbee_ota.py $(BIN_FILE) -p $(BIN_PATH) -n $(PROJECT_NAME)
+	@$(PYTHON) $(MAKE_PATH)/zigbee_ota.py $(BIN_FILE) -p $(BIN_PATH) -n $(PROJECT_NAME) -s "Telink-pvvx:$(PROJECT_NAME)_z"
 	@echo ' '
 
 sizedummy: $(ELF_FILE)
@@ -270,7 +270,7 @@ stop:
 go:
 	@$(PYTHON) $(MAKE_PATH)/TlsrPgm.py -p$(PGM_PORT) -m
 
-TADDR?=0x00842a4c
+TADDR?=0x008423a0
 TLEN?=128
 test_damp:
 	@$(PYTHON) $(MAKE_PATH)/TlsrPgm.py -p$(PGM_PORT) -z10 -c -g ds $(TADDR) $(TLEN)

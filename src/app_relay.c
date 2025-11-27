@@ -1,134 +1,137 @@
 #include "app_main.h"
 #include "sensors.h"
 
+typedef struct {
+	uint32_t id[2];
+	dev_gpios_t gpios;
+} ext_tab_gpios_t;
 
-relay_settings_t relay_settings;
-relay_settings_t relay_settings_saved; // use compare before nv_flashWriteNew()
-
-const relay_settings_t relay_settings_default = {
-    .status_onoff = {ZCL_ONOFF_STATUS_OFF},
-    .startUpOnOff = {ZCL_START_UP_ONOFF_SET_ONOFF_TO_OFF},
-#if USE_SWITCH
-    .switchType = {ZCL_SWITCH_TYPE_MOMENTARY},
-    .switchActions = {ZCL_SWITCH_ACTION_OFF_ON},
-    .switch_decoupled = {CUSTOM_SWITCH_DECOUPLED_OFF}
+const ext_tab_gpios_t  tab_gpios = {
+	.id = { 0x5F424154, 0x4F495047 }, // "TAB_GPIO"
+	.gpios = {
+		.rl = GPIO_RELAY1,
+		.led1 = GPIO_LED1,
+		.led2 = GPIO_LED2,
+		.key = GPIO_BUTTON,
+		.sw1 = GPIO_SWITCH1,
+		.swire = GPIO_ONEWIRE1,
+#if USE_BL0937
+		.sel = GPIO_SEL,
+		.cf = GPIO_CF,
+		.cf1 = GPIO_CF1,
 #endif
+#if USE_BL0942
+		.rx = GPIO_UART_RX,
+		.tx = GPIO_UART_TX,
+#endif
+	}
 };
 
-dev_relay_t      dev_relay;
+dev_gpios_t  dev_gpios;
+uint8_t relay_off, relay_state;
 
-#if USE_SWITCH
-static void check_first_start(uint8_t i) {
-
-    switch(relay_settings.startUpOnOff[i]) {
+static void check_first_start(void) {
+    switch(cfg_on_off.startUpOnOff) {
         case ZCL_START_UP_ONOFF_SET_ONOFF_TO_PREVIOUS:
-            if (relay_settings.status_onoff[i]) cmdOnOff_on(dev_relay.unit_relay[i].ep);
-            else cmdOnOff_off(dev_relay.unit_relay[i].ep);
+            if (cfg_on_off.onOff)
+            	cmdOnOff_on();
+            else
+            	cmdOnOff_off();
             break;
         case ZCL_START_UP_ONOFF_SET_ONOFF_TOGGLE:
-            cmdOnOff_toggle(dev_relay.unit_relay[i].ep);
+            cmdOnOff_toggle();
             break;
         case ZCL_START_UP_ONOFF_SET_ONOFF_TO_ON:
-            cmdOnOff_on(dev_relay.unit_relay[i].ep);
+            cmdOnOff_on();
             break;
         case ZCL_START_UP_ONOFF_SET_ONOFF_TO_OFF:
-            cmdOnOff_off(dev_relay.unit_relay[i].ep);
+            cmdOnOff_off();
             break;
         default:
-            cmdOnOff_off(dev_relay.unit_relay[i].ep);
+            cmdOnOff_off();
             break;
     }
 }
 
+/* Get relay on/off */
+bool get_relay_status(void) {
+#if RELAY_ON
+    return gpio_read(dev_gpios.rl)? true : false;
+#else
+    return gpio_read(dev_gpios.rl)? false : true;
 #endif
-
-void set_relay_status(uint8_t i, uint8_t status) {
-//    printf("set_relay_status(i = %d, status = %d). GPIO: %d\r\n", i, status, dev_relay.unit_relay[i].rl);
-	if(status) {
-		if(tik_reload != 0xffff || tik_start != 0xffff)
-			status = 0;
-	}
-	drv_gpio_write(dev_relay.unit_relay[i].rl, status);
 }
 
-nv_sts_t relay_settings_save(void) {
-    nv_sts_t st = NV_SUCC;
-#if NV_ENABLE
- #if UART_PRINTF_MODE
-    printf("Saved relay settings\r\n");
+/* Set relay and led, if not emergency */
+void set_relay_status(bool status) {
+	if(relay_off || tik_reload != 0xffff || tik_start != 0xffff)
+		status = false;
+	if(status)
+		light_on();
+	else
+		light_off();
+	relay_state = status;
+#if RELAY_ON
+	gpio_write(dev_gpios.rl, status);
+#else
+	gpio_write(dev_gpios.rl, !status);
+#endif
+}
+
+#if USE_THERMOSTAT // USE_SENSOR_MY18B20
+/* if TERMOSTAT On - Not set relay,
+   if TERMOSTAT Off - set relay */
+void set_therm_relay_status(bool status) {
+  	if(cfg_on_off.switchType == ZCL_SWITCH_TYPE_TERMOSTAT) {
+ #ifdef ZCL_THERMOSTAT
+  		if(zcl_thermostat_attrs.cfg.sys_mode == TH_SMODE_OFF)
+  			set_relay_status(status);
  #endif
-    if(memcmp(&relay_settings, &relay_settings_saved, sizeof(relay_settings))) {
-    	st = nv_flashWriteNew(1, NV_MODULE_APP,  NV_ITEM_APP_CFG_RELAY, sizeof(relay_settings_t), (uint8_t*)&relay_settings);
-    	memcpy(&relay_settings_saved, &relay_settings, (sizeof(relay_settings_saved)));
-    }
-#else
-    st = NV_ENABLE_PROTECT_ERROR;
+  	} else
+  		set_relay_status(status);
+}
 #endif
-    return st;
+
+void gpio_input_init(GPIO_PinTypeDef pin, GPIO_PullTypeDef pulup) {
+	gpio_set_func(pin, AS_GPIO); //set pin gpio
+	gpio_set_output_en(pin, 0); //disable output
+	gpio_set_input_en(pin, 1);  //enable input
+	gpio_setup_up_down_resistor(pin, pulup);
 }
 
-static void relay_settints_set(relay_settings_t * prls) {
-    memcpy(&relay_settings_saved, prls, (sizeof(relay_settings_saved)));
-    g_zcl_onOffAttrs[0].onOff = prls->status_onoff[0];
-    g_zcl_onOffAttrs[0].startUpOnOff = prls->startUpOnOff[0];
+void gpio_output_init(GPIO_PinTypeDef pin, uint8_t value) {
+	gpio_set_func(pin, AS_GPIO); //set pin gpio
+    gpio_write(pin, value);
+	gpio_set_output_en(pin, 1); //enable output
+	gpio_set_input_en(pin, 1);  //enable input
+}
+
+extern u32 scan_pins[1]; // in drv_keyboard.c
+
+void dev_gpios_init(void) {
+	memcpy(&dev_gpios, &tab_gpios.gpios, sizeof(dev_gpios));
+	if(!dev_gpios.rl)
+		dev_gpios.rl = GPIO_RELAY1;
+    gpio_output_init(dev_gpios.rl, RELAY_OFF);
+	if(!dev_gpios.led1)
+		dev_gpios.led1 = GPIO_LED1;
+    gpio_output_init(dev_gpios.led1, LED_OFF);
+    if(dev_gpios.led2)
+    	gpio_output_init(dev_gpios.led2, LED_OFF);
 #if USE_SWITCH
-    g_zcl_onOffCfgAttrs[0].custom_swtichType = g_zcl_onOffCfgAttrs[0].switchType = prls->switchType[0];
-    g_zcl_onOffCfgAttrs[0].switchActions = prls->switchActions[0];
-    g_zcl_onOffCfgAttrs[0].custom_decoupled = prls->switch_decoupled[0];
+	if(!dev_gpios.sw1)
+		dev_gpios.sw1 = GPIO_SWITCH1;
+    gpio_input_init(dev_gpios.sw1, PM_PIN_PULLUP_10K);
 #endif
-}
-
-void relay_settints_default(void) {
-	memcpy(&relay_settings, &relay_settings_default, (sizeof(relay_settings)));
-    relay_settings_save();
-	relay_settints_set(&relay_settings);
-}
-
-nv_sts_t relay_settings_restore(void) {
-    nv_sts_t st = NV_SUCC;
-
-#if NV_ENABLE
-
-    st = nv_flashReadNew(1, NV_MODULE_APP,  NV_ITEM_APP_CFG_RELAY, sizeof(relay_settings_t), (uint8_t*)&relay_settings);
-
-    if (st == NV_SUCC) {
-
-#if UART_PRINTF_MODE
-        printf("Restored relay settings\r\n");
-#if DEBUG_SAVE
-        print_setting_sr(st, &relay_settings_tmp, false);
-#endif
-#endif
-
-    } else {
-        /* default config */
-        memcpy(&relay_settings, &relay_settings_default, (sizeof(relay_settings_t)));
-#if UART_PRINTF_MODE
-        printf("Default relay settings \r\n");
-#endif
-    }
-
-    relay_settints_set(&relay_settings);
-
-#else
-    st = NV_ENABLE_PROTECT_ERROR;
-#endif
-
-    return st;
+	if(!dev_gpios.key)
+		dev_gpios.key = GPIO_BUTTON;
+    scan_pins[0] = dev_gpios.key;
+    gpio_input_init(dev_gpios.key, PM_PIN_PULLUP_1M);
 }
 
 void dev_relay_init(void) {
-    dev_relay.amt = AMT_RELAY;
-    dev_relay.unit_relay[0].ep = APP_ENDPOINT1;
-#if USE_SWITCH
-    dev_relay.unit_relay[0].sw = SWITCH1_GPIO;
-#endif
-    dev_relay.unit_relay[0].rl = RELAY1_GPIO;
-#if USE_SWITCH
-    if (relay_settings.switchType[0] == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
-        check_first_start(ZCL_START_UP_ONOFF_SET_ONOFF_TO_OFF);
-    }
-#endif
+    check_first_start();
+    light_blink_start(1, 100, 100);
 }
 
 

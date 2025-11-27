@@ -1,4 +1,4 @@
-/********************************************************************************************************
+/************************************************************************************
  * @file    zb_appCb.c
  *
  * @brief   This is the source file for zb_appCb
@@ -21,11 +21,12 @@
  *          See the License for the specific language governing permissions and
  *          limitations under the License.
  *
- *******************************************************************************************************/
+ ***********************************************************************************/
 /**********************************************************************
  * INCLUDES
  */
 #include "app_main.h"
+#include "energy_save.h"
 
 /**********************************************************************
  * LOCAL CONSTANTS
@@ -288,7 +289,7 @@ void app_leaveCnfHandler(nlme_leave_cnf_t *pLeaveCnf)
 
     if(pLeaveCnf->status == SUCCESS) {
 
-        relay_settints_default();
+        //relay_settints_default();
         energy_remove();
 
         zb_deviceFactoryNewSet(true);

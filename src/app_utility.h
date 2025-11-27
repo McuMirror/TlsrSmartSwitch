@@ -1,5 +1,5 @@
-#ifndef SRC_INCLUDE_APP_UTILITY_H_
-#define SRC_INCLUDE_APP_UTILITY_H_
+#ifndef _INCLUDE_APP_UTILITY_H_
+#define _INCLUDE_APP_UTILITY_H_
 
 /* for clock_time_exceed() */
 #define TIMEOUT_TICK_250MS  (250*1000)          /* timeout 250 ms   */
@@ -36,19 +36,4 @@
 #define TIMEOUT_30MIN       (1800 * 1000)       /* timeout 30 min   */
 #define TIMEOUT_60MIN       (3600 * 1000)       /* timeout 60 min   */
 
-int32_t delayedMcuResetCb(void *arg);
-int32_t delayedFactoryResetCb(void *arg);
-int32_t delayedFullResetCb(void *arg);
-uint32_t itoa(uint32_t value, uint8_t *ptr);
-uint64_t atoi(uint16_t len, uint8_t *data);
-uint32_t from24to32(const uint8_t *str);
-uint64_t fromPtoInteger(uint16_t len, uint8_t *data);
-uint8_t set_zcl_str(uint8_t *str_in, uint8_t *str_out, uint8_t len);
-uint64_t reverse64(uint64_t in);
-uint32_t reverse32(uint32_t in);
-uint16_t reverse16(uint16_t in);
-uint8_t *print_str_zcl(uint8_t *str_zcl);
-void start_message();
-double nat_log(double x);
-
-#endif /* SRC_INCLUDE_APP_UTILITY_H_ */
+#endif /* _INCLUDE_APP_UTILITY_H_ */

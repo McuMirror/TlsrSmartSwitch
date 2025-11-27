@@ -1,5 +1,5 @@
-#ifndef _MZSW01_BL0937_H_
-#define _MZSW01_BL0937_H_
+#ifndef _SW1_BL0937_NS_H_
+#define _SW1_BL0937_NS_H_
 
 /* Enable C linkage for C++ Compilers: */
 #if defined(__cplusplus)
@@ -11,37 +11,11 @@ extern "C" {
  * max 24 symbols
  */
 #define ZCL_BASIC_MFG_NAME     {11,'T','e','l','i','n','k','-','p','v','v','x'}
-#define ZCL_BASIC_MODEL_ID     {15,'M','Z','S','W','0','2','_','B','L','0','9','3','7','_','z'}
+#define ZCL_BASIC_MODEL_ID     {8,'S','W','1','E','M','8','_','z'}
 
-/************************* Configure SWITCH GPIO ***************************************/
-#define USE_SWITCH				1
-#define SWITCH1_GPIO            GPIO_PA1
-#define PA1_INPUT_ENABLE        ON
-#define PA1_OUTPUT_ENABLE       OFF
-#define PA1_FUNC                AS_GPIO
-
-/************************* Configure KEY GPIO ***************************************/
-#define MAX_BUTTON_NUM  1
+/************************* Configure KEY GPIO *********************************/
 
 #define BUTTON                  GPIO_PD7
-#define PD7_INPUT_ENABLE        ON
-#define PD7_DATA_OUT            OFF
-#define PD7_OUTPUT_ENABLE       OFF
-#define PD7_FUNC                AS_GPIO
-#define PULL_WAKEUP_SRC_PD7     PM_PIN_PULLUP_10K
-
-enum {
-    VK_SW1 = 0x01,
-};
-
-#define KB_MAP_NORMAL   {\
-        {VK_SW1,}}
-
-#define KB_MAP_NUM      KB_MAP_NORMAL
-#define KB_MAP_FN       KB_MAP_NORMAL
-
-#define KB_DRIVE_PINS  {NULL }
-#define KB_SCAN_PINS   {BUTTON}
 
 /************************** Configure LED ****************************************/
 
@@ -49,10 +23,6 @@ enum {
 #define LED_OFF                 1
 
 #define LED_GPIO                GPIO_PB1
-#define PB1_FUNC                AS_GPIO
-#define PB1_OUTPUT_ENABLE       ON
-#define PB1_INPUT_ENABLE        OFF
-
 
 /********************* Configure Relay ***************************/
 
@@ -60,14 +30,16 @@ enum {
 #define RELAY_OFF               0
 
 #define RELAY1_GPIO             GPIO_PD2
-#define PD2_FUNC                AS_GPIO
-#define PD2_OUTPUT_ENABLE       ON
-#define PD2_INPUT_ENABLE        ON
-#define PD2_DATA_OUT            RELAY_OFF
 
 /**************************** Configure pins for BL0937 ***********************************/
 
 #define USE_BL0937				1
+
+#define BL0937_CURRENT_REF        (191547) 		// x1000: 0..65.535A (divisor = 1000 - > A)
+#define BL0937_VOLTAGE_REF        (208773)  	// x100: 0..655.35V (divisor = 100 - > V)
+#define BL0937_POWER_REF          (1161624) 	// x100 0..327.67W, x10: 327.67..3276.7W (divisor = 10, 100 - > W)
+#define BL0937_ENERGY_REF         ((BL0937_POWER_REF + 225)/450) //(=2403) x100 Wh (divisor = 100000 - > kWh)
+
 #define GPIO_CF             	GPIO_PB4
 #define GPIO_CF1             	GPIO_PB5
 #define GPIO_SEL             	GPIO_PD3
@@ -83,13 +55,6 @@ enum {
 #define PD3_OUTPUT_ENABLE       ON
 #define PD3_DATA_OUT 			0
 
-#define MAX_VOLTAGE_DEF			26000 // 260.00V
-#define MIN_VOLTAGE_DEF			18000 // 180.00V
-#define MAX_CURRENT_DEF			25000 // 25.000A
-#define PERIOD_MAX_CURRENT_DEF	8	// 8 sec
-#define PERIOD_RELOAD_DEF		0	// sec
-#define PERIOD_START_DEF		0	// sec
-
 /********************* Configure Vbat ***************************/
 
 #define USE_BATTERY			BATTERY_DC_DC
@@ -101,7 +66,6 @@ enum {
 #define PB0_OUTPUT_ENABLE   1
 #define PB0_FUNC            AS_GPIO
 
-
 /********************* Configure printf UART ***************************/
 
 #if UART_PRINTF_MODE
@@ -110,5 +74,5 @@ enum {
 
 #endif /* UART_PRINTF_MODE */
 
-#endif /* _MZSW01_BL0937_H_ */
+#endif /* _SW1_BL0937_NS_H_ */
 

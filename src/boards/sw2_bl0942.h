@@ -1,5 +1,5 @@
-#ifndef _MZSW01_BL0942_MY18B20_H_
-#define _MZSW01_BL0942_MY18B20_H_
+#ifndef _MZSW01_BL0942_H_
+#define _MZSW01_BL0942_H_
 
 /* Enable C linkage for C++ Compilers: */
 #if defined(__cplusplus)
@@ -11,39 +11,17 @@ extern "C" {
  * max 24 symbols
  */
 #define ZCL_BASIC_MFG_NAME     {11,'T','e','l','i','n','k','-','p','v','v','x'}
-#define ZCL_BASIC_MODEL_ID     {15,'M','Z','S','W','0','1','_','B','L','0','9','4','2','_','z'}
+#define ZCL_BASIC_MODEL_ID     {8,'S','W','2','E','M','1','_','z'}
 
-#define DEV_SERVICES  SERVICE_18B20
+#define USE_SWITCH				1
 
 /************************* Configure SWITCH GPIO ***************************************/
-#define SWITCH1_GPIO            GPIO_PD2
-#define PD2_INPUT_ENABLE        ON
-#define PD2_OUTPUT_ENABLE       OFF
-#define PD2_FUNC                AS_GPIO
 
+#define SWITCH1_GPIO            GPIO_PD2
 
 /************************* Configure KEY GPIO ***************************************/
-#define MAX_BUTTON_NUM  1
 
 #define BUTTON                  GPIO_PB5
-#define PB5_INPUT_ENABLE        ON
-#define PB5_DATA_OUT            OFF
-#define PB5_OUTPUT_ENABLE       OFF
-#define PB5_FUNC                AS_GPIO
-#define PULL_WAKEUP_SRC_PB5     PM_PIN_PULLUP_10K
-
-enum {
-    VK_SW1 = 0x01,
-};
-
-#define KB_MAP_NORMAL   {\
-        {VK_SW1,}}
-
-#define KB_MAP_NUM      KB_MAP_NORMAL
-#define KB_MAP_FN       KB_MAP_NORMAL
-
-#define KB_DRIVE_PINS  {NULL }
-#define KB_SCAN_PINS   {BUTTON}
 
 /************************** Configure LED ****************************************/
 
@@ -51,9 +29,6 @@ enum {
 #define LED_OFF                 1
 
 #define LED_GPIO                GPIO_PB4
-#define PB4_FUNC                AS_GPIO
-#define PB4_OUTPUT_ENABLE       ON
-#define PB4_INPUT_ENABLE        OFF
 
 /********************* Configure Relay ***************************/
 
@@ -61,10 +36,6 @@ enum {
 #define RELAY_OFF               0
 
 #define RELAY1_GPIO             GPIO_PC3
-#define PC3_FUNC                AS_GPIO
-#define PC3_OUTPUT_ENABLE       ON
-#define PC3_INPUT_ENABLE        ON
-#define PC3_DATA_OUT            RELAY_OFF
 
 /**************************** Configure UART for BL0942 ***********************************/
 
@@ -72,13 +43,6 @@ enum {
 #define BAUDRATE_UART           4800
 #define GPIO_UART_TX            UART_TX_PB1
 #define GPIO_UART_RX            UART_RX_PB7
-
-#define MAX_VOLTAGE_DEF			26000 // 260.00V
-#define MIN_VOLTAGE_DEF			18000 // 180.00V
-#define MAX_CURRENT_DEF			25000 // 25.000A
-#define PERIOD_MAX_CURRENT_DEF	8	// 8 sec
-#define PERIOD_RELOAD_DEF		0	// sec
-#define PERIOD_START_DEF		0	// sec
 
 /********************* Configure Vbat ***************************/
 
@@ -91,7 +55,6 @@ enum {
 #define PB0_OUTPUT_ENABLE   1
 #define PB0_FUNC            AS_GPIO
 
-
 /********************* Configure printf UART ***************************/
 
 #if UART_PRINTF_MODE
@@ -100,5 +63,5 @@ enum {
 
 #endif /* UART_PRINTF_MODE */
 
-#endif /* _MZSW01_BL0942_MY18B20_H_ */
+#endif /* _MZSW01_BL0942_H_ */
 
