@@ -29,13 +29,14 @@
 (!) ќбработка новых настроек GPIO обратываетс€ только при перезагрузке устройства.
 ѕосле перенастройки номеров GPIO следует перезапустить питание устройства. 
 
-### Cluster 0x0007: _OnOff_ 
+### Cluster 0x0007: _On/Off Switch Configuration_ 
 
 * Attribute 0xF003: _Switch_Decoupled_ - 0: Off, 1: On
 * Attribute 0xF004: _Emergency_off_mask_ - задать отключение побитно: bit0: Max voltage, bit1: Min voltage, bit2: Max current, bit3: Max temperature, bit4: Min temperature
 * Attribute 0xF005: _Alarm_EmOff_ - произошло отключение по _Emergency_off_mask_, reportable, write bitX=0 -> reset event
 
-### Cluster 0x0007: _OnOff_ 
+
+### Cluster 0x0b04: _Electrical Measurement_:
 
 * Attribute 0xF007: Coefficient for calculating _current_ Ц значение коэффициента множител€ дл€ счетчика тока. —м. описание дл€ конкретного варианта датчика: BL0937/BL0942
 * Attribute 0xF008: Coefficient for calculating _voltage_ Ц значение коэффициента множител€ дл€ счетчика напр€жени€. —м. описание дл€ конкретного варианта датчика: BL0937/BL0942
@@ -43,7 +44,8 @@
 * Attribute 0xF00A: Coefficient for calculating _energy_ Ц значение коэффициента множител€ дл€ счетчика энергии. —м. описание дл€ варианта с датчиком BL0942.
 * Attribute 0xF00B: Coefficient for calculating _freq_ Ц значение коэффициента дл€ счетчика частоты. —м. описание дл€ варианта с датчиком BL0942.
 
-### Cluster 0x0b04: _Electrical Measurement_:
+
+### Cluster 0x0402: _Temperature Measurement_
 
 * Attribute 0xF00C: _my18b20_id_ - серийный номер датчика MY18B20, 32 bit, read only
 * Attribute 0xF00D: _my18b20_err_ - ошибки при работе с датчиком MY18B20: bit0: сбои при работе, bit1: не инициализирован, read only
