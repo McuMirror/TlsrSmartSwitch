@@ -63,6 +63,38 @@ Optimizations have been made:
 [Описание дополнительных (нестандартных) атрибутов для максимального варианта прошивки](https://github.com/pvvx/TlsrSmartSwitch/blob/master/README_ExtAttr.md).
 
 
+## Thermostat
+
+![thermostat1.gif](https://raw.githubusercontent.com/pvvx/TlsrSmartSwitch/refs/heads/master/img/thermostat1.gif)
+
+Прошивка FW, содержащая термостат, при включении любого рабочего режима для термостата:
+1.	Отключает обработку кнопок и команд On/Off. При отключении режима термостата в режим “выключен” обработка кнопок и команд On/Off производится в обычном режиме.
+2.	Управление реле подчиняется условиям, установленным для термостата и остальным заданным граничным условиям.
+3.	Скорость переключения термостата зависит от скорости изменения температуры и заданного гистерезиса в [my18b20_hysteresis](https://github.com/pvvx/TlsrSmartSwitch/blob/master/README_ExtAttr.md#cluster-0x0402-temperature-measurement). Проверка температуры производится каждую секунду.
+
+Пример работы термостата на нагрев: 
+Датчик MY18B20 находится у баллона  лампы накаливания на 40 Вт.
+
+![thermostat2.gif](https://raw.githubusercontent.com/pvvx/TlsrSmartSwitch/refs/heads/master/img/thermostat2.gif)
+
+В ZHA по умолчанию задаются слишком большие интервалы для репорта, и возможность изменить значения в репортах у пользователя отсутствуют. В итоге, если температура меняется быстрее назначенных в репорте значений,  ZHA может пропускать переключения состояний термостата.
+
+
+![thermostat3.gif](https://raw.githubusercontent.com/pvvx/TlsrSmartSwitch/refs/heads/master/img/thermostat3.gif)
+
+## Программа конфигурации GPIO.
+
+![config.gif](https://raw.githubusercontent.com/pvvx/TlsrSmartSwitch/refs/heads/master/img/config.gif)
+
+[Программа конфигурации GPIO](https://pvvx.github.io/TlsrSmartSwitch/zigbeeswconfig.html)  служит для конфигурации собственных  вариантов прошивок. 
+Назначенная в FW  конфигурация GPIO  при первом запуске сохраняется во Flash.
+Далее это сохранение является приоритетным - изменить GPIO возможно только с помощью изменения значений в [кластере On/Off](https://github.com/pvvx/TlsrSmartSwitch/blob/master/README_ExtAttr.md#cluster-0x0006-onoff).
+
+---
+
+## ...
+
 * Требуется помощь в проверке всех вариантов прошивок и комбинаций установок, а так-же в создании скриптов "причуд" для ZHA и Z2M.
 
 [Telegram](https://t.me/pvvx_developments/39)
+
