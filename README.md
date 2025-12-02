@@ -30,7 +30,7 @@ Optimizations have been made:
 * Setting the starting interval for threshold checking before the relay is turned on when power is restored.
 * The start and restart intervals are counted using threshold values. If any threshold is triggered, the countdown begins again.
 * Added thermometer and thermostat with MY18B20 sensor.
-* The flash memory's lifespan has been extended to maintain energy metering. Energy is recorded every minute. For 512 KB flash memory, the minimum write life is 77 years, and for 1 MB flash memory, it's over 1,000 years.
+* The flash memory's lifespan has been extended to maintain energy metering. Energy is recorded every minute. For 512 KB flash memory, the minimum write life is 777 years (100K Program-Erase cycles), and for 1 MB flash memory, it's over 19,813.5 years.
 * Added GPIOs modification.
 * [GPIOs modification utility for ready-made firmware](https://pvvx.github.io/TlsrSmartSwitch/zigbeeswconfig.html).
 
