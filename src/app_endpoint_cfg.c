@@ -92,7 +92,7 @@ const uint16_t app_ep1_inClusterList[] = {
  *  @brief Definition for Outgoing cluster / Client Cluster
  */
 const uint16_t app_ep1_outClusterList[] = {
-#ifdef ZCL_ON_OFF
+#if USE_SWITCH
     ZCL_CLUSTER_GEN_ON_OFF,
 #endif
 #ifdef ZCL_OTA
@@ -414,6 +414,7 @@ const zclAttrInfo_t onOff1_attrTbl[] = {
     { ZCL_ATTRID_GPIO_RX,   				ZCL_UINT16,   RW, (u8*)&dev_gpios_new.rx },
     { ZCL_ATTRID_GPIO_TX,   				ZCL_UINT16,   RW, (u8*)&dev_gpios_new.tx },
 #endif
+    { ZCL_ATTRID_GPIO_FLG,   				ZCL_DATA_TYPE_BITMAP16,   RW, (u8*)&dev_gpios_new.flg },
 #endif
 
     { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,   ZCL_UINT16,     R,      (uint8_t*)&zcl_attr_global_clusterRevision      },

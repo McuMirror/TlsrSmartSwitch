@@ -129,7 +129,8 @@ static void save_fgpio(flash_tab_gpios_t * pftab) {
 void save_config_gpio(void) {
 	flash_tab_gpios_t ftab;
 	flash_read_page(FLASH_ADDR_TAB_GPIOS, sizeof(ftab), (uint8_t *)&ftab);
-	if(memcmp(&ftab.gpios, &dev_gpios, sizeof(ftab.gpios))) {
+	if(memcmp(&ftab.gpios, &dev_gpios_new, sizeof(ftab.gpios))) {
+		memcpy(&ftab.gpios,&dev_gpios_new, sizeof(ftab.gpios));
 		save_fgpio(&ftab);
 	}
 }
@@ -162,9 +163,11 @@ void dev_gpios_init(void) {
     gpio_output_init(dev_gpios.rl, RELAY_OFF);
 	if(!dev_gpios.led1)
 		dev_gpios.led1 = GPIO_LED1;
-    gpio_output_init(dev_gpios.led1, LED_OFF);
+    gpio_output_init(dev_gpios.led1,
+    		(dev_gpios.flg & GPIOS_FLG_LED1_POL)? LED_ON : LED_OFF);
     if(dev_gpios.led2)
-    	gpio_output_init(dev_gpios.led2, LED_OFF);
+    	gpio_output_init(dev_gpios.led2,
+    			(dev_gpios.flg & GPIOS_FLG_LED2_POL)? LED_ON : LED_OFF);
 #if USE_SWITCH
 	if(!dev_gpios.sw1)
 		dev_gpios.sw1 = GPIO_SWITCH1;
@@ -173,7 +176,7 @@ void dev_gpios_init(void) {
 	if(!dev_gpios.key)
 		dev_gpios.key = GPIO_BUTTON;
     scan_pins[0] = dev_gpios.key;
-    gpio_input_init(dev_gpios.key, PM_PIN_PULLUP_1M);
+    gpio_input_init(dev_gpios.key, PM_PIN_PULLUP_10K);
 }
 
 void dev_relay_init(void) {

@@ -3,7 +3,11 @@
 
 //#define AMT_RELAY   1
 
+#define GPIOS_FLG_LED1_POL	1 // not change! -> see get_led()
+#define GPIOS_FLG_LED2_POL	2
+
 typedef struct {
+    uint16_t		flg;	// LED1-2 inversion bits, ...
     GPIO_PinTypeDef rl;
     GPIO_PinTypeDef led1;
     GPIO_PinTypeDef led2;

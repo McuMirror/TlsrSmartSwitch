@@ -153,7 +153,8 @@ void user_app_init(void)
 
 void app_task(void) {
 	if(dev_gpios.led2) {
-		gpio_write(dev_gpios.led2, cfg_on_off.onOff);
+		gpio_write(dev_gpios.led2,
+				(dev_gpios.flg & GPIOS_FLG_LED2_POL)? cfg_on_off.onOff : !cfg_on_off.onOff);
 	}
     button_handler();
 #if USE_BL0942

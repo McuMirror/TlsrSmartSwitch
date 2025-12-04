@@ -53,6 +53,7 @@
 #define ZCL_ATTRID_GPIO_RX					0xF109
 #define ZCL_ATTRID_GPIO_TX					0xF10A
 #endif
+#define ZCL_ATTRID_GPIO_FLG					0xF10B
 #endif
 
 /**
