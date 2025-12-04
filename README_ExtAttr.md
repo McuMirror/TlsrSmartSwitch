@@ -11,8 +11,8 @@
 * Attribute ***0xF002:*** _Switch_Type_ - 0: TOGGLE, 1: MOMENTARY, 2: MULTIFUNCTION, 3: TERMOSTAT
 
 * Attribute ***0xF100***: _gpio_realy_ - номер gpio для подключения реле
-* Attribute ***0xF101***: _gpio_led1_ - номер gpio для подключения светодиода состояния
-* Attribute ***0xF102***: _gpio_led2_ - номер gpio для подключения светодиода On/Off (=0 - не использется)
+* Attribute ***0xF101***: _gpio_led1_ - номер gpio для подключения светодиода состояния (LED1)
+* Attribute ***0xF102***: _gpio_led2_ - номер gpio для подключения светодиода On/Off (LED2), =0 - не используется
 * Attribute ***0xF103***: _gpio_key_ - номер gpio для подключения кнопки
 * Attribute ***0xF104***: _gpio_switch_ - номер gpio для подключения внешней кнопки (может совпадать с _gpio_swire_)
 * Attribute ***0xF105***: _gpio_swire_ - номер gpio для подключения MY18B20 (может совпадать с _gpio_switch_)
@@ -21,6 +21,7 @@
 * Attribute ***0xF108***: _gpio_cf1_ - номер gpio для подключения BL0937 вывода CF1 (7)
 * Attribute ***0xF109***: _gpio_rx_ - номер gpio для подключения BL0942 вывода TX (10), вариатны: [PA0,PB0,PB7,PC3,PC5,PD6]
 * Attribute ***0xF10A***: _gpio_tx_ - номер gpio для подключения BL0942 вывода RX (9), вариатны: [PA2,PB1,PC2,PD0,PD3,PD7]
+* Attribute ***0xF10B***: _gpio_flg_ - bit0: Инверсия вывода LED1, bit1: Инверсия вывода LED2
 
 (!) Если номер GPIO не назначен, то устанавливливается номер GPIO по умолчанию (установленный в прошивке).
 
