@@ -5,6 +5,8 @@ Current FW Version: 0.0.0.6 (beta)
 
 ## Supported device models:
 
+![MiniZigbeeSwitchWitchPowerMonitor.jpg](https://raw.githubusercontent.com/pvvx/TlsrSmartSwitch/refs/heads/master/img/MiniZigbeeSwitchWitchPowerMonitor.jpg)
+
 Default:
 * [Tuya ZigBee "Mini Zigbee Switch"](https://pvvx.github.io/TS0001_TZ3000_kqvb5akv/) (Sensor: **BL0942**), FW name: ***EM1SW**<**1**/**2**>[**T**/**TS**]*
 * [Tuya ZigBee "Mini Smart Switch"](https://pvvx.github.io/TS000F_TZ3000_xkap8wtb/) (Sensor: **BL0937**), FW name: ***EM8SW**<**1/2**>[**T**/**TS**]*
