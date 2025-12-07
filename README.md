@@ -101,6 +101,15 @@ Optimizations have been made:
 В дальнейших обновлениях через ZigbeeOTA можно использовать любую новую версию алтернативной прошивки, не смотря на то, какие в ней назначены GPIO.
 После Zigbee OTA с новой версией FW будут приняты ранее сохраненные в этом устройстве значения для GPIO.
 
+
+## Подключение датчика MY18B20
+
+
+![MY18B20.jpg](https://raw.githubusercontent.com/pvvx/TlsrSmartSwitch/refs/heads/master/img/MY18B20.jpg)
+
+
+![Wire.jpg](https://raw.githubusercontent.com/pvvx/TlsrSmartSwitch/refs/heads/master/img/Wire.jpg)
+
 ---
 
 ## ...
