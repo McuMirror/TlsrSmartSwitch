@@ -31,6 +31,7 @@ typedef struct {
 	uint32_t tick;
 	uint32_t timeout;
 	uint8_t errors; // AC_ERROR_CODE?
+	uint8_t cnt_errors;
 } my18b20_t;
 
 extern my18b20_t my18b20;

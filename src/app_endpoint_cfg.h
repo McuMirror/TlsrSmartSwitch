@@ -5,11 +5,8 @@
 #define APP_ENDPOINT2 0x02
 #define APP_ENDPOINT3 0x03
 
-
-/* Custom Attr for Relay (OnOff cluster) */
-#define ZCL_ATTRID_RELAY_STATE				0xF000 // RR, On/Off
-
 /* Custom Attr for OnOff cluster */
+#define ZCL_ATTRID_RELAY_STATE				0xF000 // RR, On/Off
 #define ZCL_ATTRID_CUSTOM_KEY_LOCK          0xF001
 #define ZCL_ATTRID_CUSTOM_LED               0xF002
 
@@ -18,8 +15,9 @@
 #define CUSTOM_ATTRID_DECOUPLED             0xF004
 
 /* Custom Attr for Electrical Measurement cluster */
-#define ZCL_ATTRID_EMERGENCY_OFF			0xF005 // RW
-#define ZCL_ATTRID_ALARM_FLAGS				0xF006 // RWR, 8 bits_emergency_off_t
+#define ZCL_ATTRID_ALARM_MASK				0xF005 // RW
+#define ZCL_ATTRID_ALARM_EVENTS				0xF006 // RWR, 8 bits_emergency_off_t
+
 #define ZCL_ATTRID_CURRENT_COEF       		0xF007
 #define ZCL_ATTRID_VOLTAGE_COEF        		0xF008
 #define ZCL_ATTRID_POWER_COEF         		0xF009
@@ -189,12 +187,12 @@ typedef enum {
 
 typedef struct {
 	bool     onOff;
-	uint8_t  startUpOnOff;
-	uint8_t  key_lock;
-	uint8_t  led_control;
-    uint8_t  switchType;         // 0x00 - toggle, 0x01 - momentary, 0x02 - multifunction, 0x03 - thermostat
+	uint8_t  startUpOnOff;	// 0 - Off, 1 - On, 2 - TOGGLE, 0xff - PREVIOUS
+	uint8_t  key_lock;		// 0 - Off, 1 - On
+	uint8_t  led_control;	// 0 - Off, 1 - On, 2 - On_Off
+    uint8_t  switchType;	// 0 - toggle, 1 - momentary, 2 - multifunction, 3 - thermostat
 #if USE_SWITCH
-    uint8_t  switchActions;
+    uint8_t  switchActions;	// 0 - ON_OFF, 1 - OFF_ON, 2 - TOGGLE
     uint8_t  switchDecoupled;
 #endif
 } config_on_off_t; // save
@@ -216,6 +214,7 @@ typedef struct {
     uint16_t	value;
     uint16_t    num;
     uint8_t     status_flag;
+//    uint8_t		reliablility;
 } zcl_msInputAttr_t;
 
 typedef struct {
@@ -252,6 +251,7 @@ typedef enum {
 	BIT_MAX_CURRENT_OFF,	// 0x04
 	BIT_MAX_TEMP_OFF,		// 0x08
 	BIT_MIN_TEMP_OFF,		// 0x10
+	BIT_ERR_TS_OFF,			// 0x20
 } bits_emergency_off_t;
 
 typedef struct {

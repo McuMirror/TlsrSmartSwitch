@@ -7,7 +7,7 @@
 ### Cluster 0x0006: _OnOff_ 
 
 * Attribute ***0xF000:*** _relay_state_ - текущее состояние реле (On/Off), read only
-* Attribute ***0xF001:*** _key_lock_ - отключение кнопки (в текущей версии не задействован)
+* Attribute ***0xF001:*** _key_lock_ - отключение кнопки (On/Off, кроме функции сброса)
 * Attribute ***0xF002:*** _led_control_ - 0: LED OFF, 1: LED ON, 2: LED ON/OFF
 
 * Attribute ***0xF100***: _gpio_realy_ - номер gpio для подключения реле
@@ -45,14 +45,26 @@
 
 ### Cluster 0x0007: _On/Off Switch Configuration_ 
 
-* Attribute ***0xF003:*** _switch_type_ - тип внешней кнопки: 0: TOGGLE, 1: MOMENTARY, 2: MULTIFUNCTION, 3: THERMOSTAT
+* Attribute ***0xF003:*** _switch_type_ - тип внешней кнопки:
+
+	0. Toogle, 
+	1. Momentary
+	2. Multifunction
+
 * Attribute ***0xF004***: _switch_decoupled_ - внешняя кнопка работает отдельно от реле: 0: Off, 1: On
 
 ### Cluster 0x0b04: _Electrical Measurement_:
 
-* Attribute ***0xF005***: _alarm_mask_ - задать аварийные отключения, побитно: bit0: Max voltage, bit1: Min voltage, bit2: Max current, bit3: Max temperature, bit4: Min temperature
-* Attribute ***0xF006***: _alarm_events_ - состояние аварийного отключения по _alarm_mask_, reportable, write 0 -> reset event
+* Attribute ***0xF005***: _alarm_mask_ - задать аварийные отключения, побитно: 
 
+	0. bit0: Max voltage,
+	1. bit1: Min voltage, 
+	2. bit2: Max current, 
+	3. bit3: Max temperature,
+	4. bit4: Min temperature,
+	5. bit5: Temperature sensor malfunction
+
+* Attribute ***0xF006***: _alarm_events_ - состояние аварийного отключения по _alarm_mask_, reportable, write 0 -> reset event
 
 * Attribute ***0xF007***: Coefficient for calculating _current_ – значение коэффициента множителя для счетчика тока. См. описание для конкретного варианта датчика: BL0937/BL0942
 * Attribute ***0xF008***: Coefficient for calculating _voltage_ – значение коэффициента множителя для счетчика напряжения. См. описание для конкретного варианта датчика: BL0937/BL0942
@@ -64,6 +76,11 @@
 
 * Attribute ***0xF00C***: _my18b20_id_ - серийный номер датчика MY18B20, 32 bit, read only
 * Attribute ***0xF00D***: _my18b20_err_ - ошибки при работе с датчиком MY18B20: bit0: сбои при работе, bit1: не инициализирован, read only
+
+	0. bit0: Не инициализирован (не найден при старте),
+	1. bit1: Сбои при работе,
+	2. bit1: Критический сбой (неисправность датчика)
+
 * Attribute ***0xF00E***: _my18b20_coef_ - коэффициент множителя для преобразования значения от датчика MY18B20 в температуру в градусах C, по умолчанию равен 409600.
 * Attribute ***0xF00F***: _my18b20_zero_ - смещение нуля для датчика MY18B20 в 0.01C, по умолчанию равен 0.
 * Attribute ***0xF010***: _my18b20_hysteresis_ - гистерезис для датчика MY18B20 в 0.01C для уставки термостата, по умолчанию равен 0.15C.

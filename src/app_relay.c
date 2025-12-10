@@ -88,13 +88,10 @@ void set_relay_status(bool status) {
 /* if TERMOSTAT On - Not set relay,
    if TERMOSTAT Off - set relay */
 void set_therm_relay_status(bool status) {
-  	if(cfg_on_off.switchType == ZCL_SWITCH_TYPE_TERMOSTAT) {
  #ifdef ZCL_THERMOSTAT
   		if(zcl_thermostat_attrs.cfg.sys_mode == TH_SMODE_OFF)
   			set_relay_status(status);
  #endif
-  	} else
-  		set_relay_status(status);
 }
 #endif
 

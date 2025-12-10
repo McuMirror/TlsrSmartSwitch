@@ -188,25 +188,7 @@ static void app_zclWriteReqCmd(uint8_t epId, uint16_t clusterId, zclWriteCmd_t *
 			}
 #if USE_SWITCH
 		} else if (clusterId == ZCL_CLUSTER_GEN_ON_OFF_SWITCH_CONFIG) {
-			if (attrID == CUSTOM_ATTRID_SWITCH_TYPE) {
-				cfg_on_off.switchType = data;
-				if (data == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
-					cmdOnOff_off();
-					cfg_on_off.switchDecoupled = CUSTOM_SWITCH_DECOUPLED_ON;
-				}
 				save |= BIT(NBIT_ON_OFF_CONFIG);
-			} else if (attrID == ZCL_ATTRID_SWITCH_ACTION) {
-				cfg_on_off.switchActions = data;
-				save |= BIT(NBIT_ON_OFF_CONFIG);
-			} else if (attrID == CUSTOM_ATTRID_DECOUPLED) {
-				cmdOnOff_off();
-				if (data == CUSTOM_SWITCH_DECOUPLED_OFF
-					&& cfg_on_off.switchType == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
-					data = CUSTOM_SWITCH_DECOUPLED_ON;
-				}
-				cfg_on_off.switchDecoupled = data;
-				save |= BIT(NBIT_ON_OFF_CONFIG);
-			}
 #endif // USE_SWITCH
 #if USE_SENSOR_MY18B20
  #ifdef ZCL_THERMOSTAT
@@ -268,9 +250,9 @@ static void app_zclWriteReqCmd(uint8_t epId, uint16_t clusterId, zclWriteCmd_t *
     	save_config_my18b20();
     }
 #endif // USE_SENSOR_MY18B20
+
     if (save & BIT(NBIT_ON_OFF_CONFIG)) {
     	save_config_on_off();
-
 //    	led_set_control();	// restore led?
     	// restore relay
 #if USE_THERMOSTAT // USE_SENSOR_MY18B20

@@ -267,15 +267,10 @@ static void set_thermostat(int16_t temp) {
 			zcl_thermostat_attrs.run_mode = TH_RMODE_OFF;
 		}
 	}
-#if USE_SWITCH
-	if(cfg_on_off.switchType == ZCL_SWITCH_TYPE_TERMOSTAT)
-#endif
-	{
-		if(zcl_thermostat_attrs.cfg.sys_mode != TH_SMODE_OFF)
-			set_relay_status(zcl_thermostat_attrs.run_mode != TH_RMODE_OFF);
-	}
+	if(zcl_thermostat_attrs.cfg.sys_mode != TH_SMODE_OFF)
+		set_relay_status(zcl_thermostat_attrs.run_mode != TH_RMODE_OFF);
 }
-#endif
+#endif // ZCL_THERMOSTAT
 
 void init_my18b20(void) {
 	load_config_my18b20();
@@ -296,20 +291,32 @@ void init_my18b20(void) {
 		sleep_us(POST_PRESENT_STEP_TICK);
 		if(onewire_write(0x033, 8) >= 0) {
 			my18b20.id = onewire_read(32);
-#ifdef ZCL_THERMOSTAT
-#if USE_SWITCH
-			if(dev_gpios.sw1 == dev_gpios.swire)
-#endif
-				cfg_on_off.switchType = ZCL_SWITCH_TYPE_TERMOSTAT;
-#endif
 		} else {
-			my18b20.errors |= BIT(1); // Room Temperature Sensor Failure?
+			my18b20.errors |= BIT(0); // Room Temperature Sensor Failure?
 		}
 	} else {
-		my18b20.errors |= BIT(1); // Room Temperature Sensor Failure?
+		my18b20.errors |= BIT(0); // Room Temperature Sensor Failure?
 	}
 	onewire_bus_low();
 	my18b20.tick = clock_time();
+}
+
+static void error_my18b20(void) {
+	my18b20.errors |= BIT(1);
+	my18b20.stage = 0;
+	if(++my18b20.cnt_errors > 7) {
+		my18b20.errors |= BIT(2);
+		my18b20.cnt_errors = 0;
+#ifdef ZCL_TEMPERATURE_MEASUREMENT
+		g_zcl_temperatureAttrs.measuredValue = 0x8000;
+#endif
+#ifdef ZCL_THERMOSTAT
+		zcl_thermostat_attrs.local_temp = 0x8000;
+#endif
+		if (config_min_max.emergency_off & BIT(BIT_ERR_TS_OFF)) {
+			relay_off |= BIT(BIT_ERR_TS_OFF);
+		}
+	}
 }
 
 __attribute__((optimize("-O2"))) // No Os!
@@ -323,8 +330,7 @@ void task_my18b20(void) {
 				my18b20.stage = 2;
 				my18b20.timeout = 10;
 			} else {
-				my18b20.errors |= BIT(0);
-				my18b20.stage = 0;
+				error_my18b20();
 				my18b20.timeout = ERROR_TIMEOUT_TICK;
 			}
 			onewire_bus_low();
@@ -341,8 +347,7 @@ void task_my18b20(void) {
 				my18b20.stage = 5;
 				my18b20.timeout = MEASURE_TIMEOUT_TICK;
 			} else {
-				my18b20.errors |= BIT(0);
-				my18b20.stage = 0;
+				error_my18b20();
 				my18b20.timeout = MIN_STEP_TICK;
 				onewire_bus_low();
 			}
@@ -369,9 +374,9 @@ void task_my18b20(void) {
 				g_zcl_temperatureAttrs.measuredValue = temp;
 #endif
 				my18b20.stage = 2;
+				my18b20.cnt_errors = 0;
 			} else {
-				my18b20.errors |= BIT(0);
-				my18b20.stage = 0;
+				error_my18b20();
 			}
 			onewire_bus_low();
 			my18b20.timeout = MIN_STEP_TICK;
@@ -379,10 +384,12 @@ void task_my18b20(void) {
 
 		default: // reset bus -> presence
 			if(onewire_tst_presence() >= 0) {
+				// presence ok
 				my18b20.stage++;
 				my18b20.timeout = POST_PRESENT_STEP_TICK;
 			} else {
-				my18b20.stage = 1;
+				// presence err
+				error_my18b20();
 				my18b20.timeout = MIN_STEP_TICK + POST_PRESENT_STEP_TICK;
 				onewire_bus_low();
 			}

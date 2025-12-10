@@ -151,9 +151,6 @@ static void read_switch_toggle(void) {
                         }
                         app_switch.timerFrCounterEvt = TL_ZB_TIMER_SCHEDULE(switch_counterFrCb, NULL, TIMEOUT_1SEC);
                         if (app_switch.counter == 1) {
-#if UART_PRINTF_MODE && DEBUG_SWITCH
-                            printf("Switch is ON\r\n");
-#endif
                             if (cfg_on_off.switchType == ZCL_SWITCH_TYPE_MOMENTARY) {
                                 if (cfg_on_off.switchActions == ZCL_SWITCH_ACTION_OFF_ON) {
                                     remoteCmdOnOff(ZCL_CMD_ONOFF_ON);
@@ -188,9 +185,6 @@ static void read_switch_toggle(void) {
                     } else {
                         app_switch.status = SWITCH_OFF;
                         if (!app_switch.timerFrCounterEvt) {
-#if UART_PRINTF_MODE && DEBUG_SWITCH
-                            printf("Switch is OFF\r\n");
-#endif
                             if (cfg_on_off.switchType == ZCL_SWITCH_TYPE_MOMENTARY) {
                                 if (cfg_on_off.switchActions == ZCL_SWITCH_ACTION_OFF_ON) {
                                     remoteCmdOnOff(ZCL_CMD_ONOFF_OFF);
@@ -275,11 +269,7 @@ static void read_switch_multifunction(void) {
 
 void switch_handler(void) {
 #if USE_SENSOR_MY18B20
-	if(dev_gpios.sw1 == dev_gpios.swire
-#if USE_THERMOSTAT
-		&& cfg_on_off.switchType == ZCL_SWITCH_TYPE_TERMOSTAT
-#endif
-	) {
+	if(dev_gpios.sw1 == dev_gpios.swire) {
 		return;
 	}
 #endif
@@ -292,11 +282,7 @@ void switch_handler(void) {
 
 bool switch_idle(void) {
 #if USE_SENSOR_MY18B20
-	if(dev_gpios.sw1 == dev_gpios.swire
-#if USE_THERMOSTAT
-		&& cfg_on_off.switchType == ZCL_SWITCH_TYPE_TERMOSTAT
-#endif
-	) {
+	if(dev_gpios.sw1 == dev_gpios.swire) {
 		return false;
 	}
 #endif

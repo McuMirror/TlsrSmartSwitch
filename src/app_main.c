@@ -165,7 +165,7 @@ void app_task(void) {
 #endif
 #if USE_SWITCH
     switch_handler();
-    if (BDB_STATE_GET() == BDB_STATE_IDLE && !button_idle()	&& !switch_idle())
+    if (BDB_STATE_GET() == BDB_STATE_IDLE /* && !button_idle() */ && !switch_idle())
 		report_handler();
 #else
 	if (BDB_STATE_GET() == BDB_STATE_IDLE && !button_idle())
@@ -307,7 +307,7 @@ void user_init(bool isRetention)
     /* Alarm */
     reportableChange_tmp = 1;
     bdb_defaultReportingCfg(APP_ENDPOINT1, HA_PROFILE_ID, ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT,
-    		ZCL_ATTRID_ALARM_FLAGS, 0, REPORT_TIME_STAT_DEF, (uint8_t *)&reportableChange_tmp);
+    		ZCL_ATTRID_ALARM_EVENTS, 0, REPORT_TIME_STAT_DEF, (uint8_t *)&reportableChange_tmp);
 #endif // ZCL_ELECTRICAL_MEASUREMENT
 
 #ifdef ZCL_TEMPERATURE_MEASUREMENT

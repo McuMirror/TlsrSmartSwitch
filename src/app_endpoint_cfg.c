@@ -302,14 +302,16 @@ zcl_msInputAttr_t g_zcl_msInputAttrs = {
         .value = ACTION_EMPTY,
         .num = 8,
         .out_of_service = 0,
-        .status_flag = 0
+        .status_flag = 0,
+//		.reliablility = 0
 };
 
 const zclAttrInfo_t msInput1_attrTbl[] = {
+	{ ZCL_MULTISTATE_INPUT_ATTRID_NUM_OF_STATES,    ZCL_UINT16,     RW,      (uint8_t*)&g_zcl_msInputAttrs.num            },
 	{ ZCL_MULTISTATE_INPUT_ATTRID_OUT_OF_SERVICE,   ZCL_BOOLEAN,    RW,     (uint8_t*)&g_zcl_msInputAttrs.out_of_service },
 	{ ZCL_MULTISTATE_INPUT_ATTRID_PRESENT_VALUE,    ZCL_UINT16,     RWR,    (uint8_t*)&g_zcl_msInputAttrs.value          },
+//	{ ZCL_MULTISTATE_INPUT_ATTRID_RELIABLILITY,		ZCL_ENUM8,		R,		(uint8_t*)&g_zcl_msInputAttrs.value          },
 	{ ZCL_MULTISTATE_INPUT_ATTRID_STATUS_FLAGS,     ZCL_BITMAP8,    RR,     (uint8_t*)&g_zcl_msInputAttrs.status_flag    },
-	{ ZCL_MULTISTATE_INPUT_ATTRID_NUM_OF_STATES,    ZCL_UINT16,     R,      (uint8_t*)&g_zcl_msInputAttrs.num            },
 
 	{ ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,           ZCL_UINT16,     R,      (uint8_t*)&zcl_attr_global_clusterRevision      },
 };
@@ -557,8 +559,8 @@ const zclAttrInfo_t ms_attrTbl[] = {
 	{ZCL_ATTRID_RMS_EXTREME_UNDER_VOLTAGE,  ZCL_INT16,    RW,   (uint8_t*)&config_min_max.min_voltage		},
 	{ZCL_ATTRID_RMS_VOLTAGE_SWELL,  		ZCL_INT16,    RW,   (uint8_t*)&config_min_max.max_current		},
 
-	{ZCL_ATTRID_EMERGENCY_OFF,  	ZCL_BITMAP8,   RW,   (uint8_t*)&config_min_max.emergency_off},
-	{ZCL_ATTRID_ALARM_FLAGS,  		ZCL_BITMAP8,   RWR,  (uint8_t*)&relay_off},
+	{ZCL_ATTRID_ALARM_MASK,  		ZCL_BITMAP8,   RW,   (uint8_t*)&config_min_max.emergency_off},
+	{ZCL_ATTRID_ALARM_EVENTS,  		ZCL_BITMAP8,   RWR,  (uint8_t*)&relay_off},
 	{ZCL_ATTRID_CURRENT_COEF,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.current		},
 	{ZCL_ATTRID_VOLTAGE_COEF,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.voltage		},
 	{ZCL_ATTRID_POWER_COEF,  		ZCL_UINT32,    RW,   (uint8_t*)&sensor_pwr_coef.power		},
@@ -661,6 +663,11 @@ nv_sts_t load_config_on_off(void) {
 }
 
 nv_sts_t save_config_on_off(void) {
+#if USE_SWITCH
+	if (cfg_on_off.switchType == ZCL_SWITCH_TYPE_MULTIFUNCTION) {
+		cfg_on_off.switchDecoupled = CUSTOM_SWITCH_DECOUPLED_ON;
+	}
+#endif
 #if NV_ENABLE
 	nv_sts_t ret = NV_SUCC;
 	if(memcmp(&cfg_on_off_saved, &cfg_on_off, sizeof(cfg_on_off))) {
